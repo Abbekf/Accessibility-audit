@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <title>Tillgänglighetsrevisor – Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: -apple-system, Segoe UI, sans-serif; background: #f7f7f7; margin: 0; padding: 0; }
+    .container { max-width: 420px; margin: 60px auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 12px #0001; padding: 32px 28px; }
+    h1 { font-size: 1.5rem; margin-bottom: 18px; }
+    label { font-weight: 600; }
+    input[type="url"] { width: 100%; padding: 10px; font-size: 1rem; border: 1px solid #bbb; border-radius: 4px; margin: 10px 0 18px 0; }
+    button { background: #00796b; color: #fff; border: none; padding: 10px 22px; border-radius: 4px; font-size: 1rem; cursor: pointer; }
+    button:disabled { background: #ccc; }
+    .status { margin-top: 18px; font-size: 1rem; color: #00796b; }
+    .error { color: #c0392b; }
+    iframe { width: 100%; height: 600px; border: none; margin-top: 24px; }
+    .pdf-actions { margin-top: 18px; display: none; }
+    .pdf-actions button, .pdf-actions a { margin-right: 10px; padding: 8px 18px; font-size: 1rem; border-radius: 4px; border: none; background: #00796b; color: #fff; text-decoration: none; display: inline-block; }
+    .pdf-actions a { background: #388e3c; }
+    .pdf-actions button:disabled, .pdf-actions a:disabled { background: #ccc; }
+    .pdf-viewer { width: 100%; min-width: 320px; max-width: 900px; height: 90vh; min-height: 600px; border: 1px solid #ddd; border-radius: 8px; margin: 24px auto 0 auto; display: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Tillgänglighetsrevisor</h1>
+    <form id="scan-form">
+      <label for="url">Webbplatsens URL:</label>
+      <input type="url" id="url" name="url" placeholder="https://www.exempel.se" required>
+      <button type="submit">Starta granskning</button>
+    </form>
+    <div class="status" id="status"></div>
+    <div class="pdf-actions" id="pdf-actions">
+      <a id="download-link" href="#" download="rapport.pdf">Ladda ner PDF</a>
+      <a id="fullscreen-link" href="#" target="_blank">Visa i helskärm</a>
+    </div>
+    <iframe id="pdf-frame" class="pdf-viewer"></iframe>
+  </div>
+  <script>
+    const form = document.getElementById('scan-form');
+    const statusDiv = document.getElementById('status');
+    const pdfFrame = document.getElementById('pdf-frame');
+    const pdfActions = document.getElementById('pdf-actions');
+    const downloadLink = document.getElementById('download-link');
+    const fullscreenLink = document.getElementById('fullscreen-link');
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      statusDiv.textContent = '';
+      pdfFrame.style.display = 'none';
+      pdfFrame.classList.remove('pdf-viewer');
+      pdfActions.style.display = 'none';
+      const url = document.getElementById('url').value;
+      form.querySelector('button').disabled = true;
+      statusDiv.textContent = 'Granskar... detta kan ta upp till en minut.';
+      try {
+        const res = await fetch('/scan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url })
+        });
+        if (!res.ok) throw new Error('Fel vid granskning');
+        const blob = await res.blob();
+        const pdfUrl = URL.createObjectURL(blob);
+        pdfFrame.src = pdfUrl;
+        pdfFrame.style.display = 'block';
+        pdfFrame.classList.add('pdf-viewer');
+        downloadLink.href = pdfUrl;
+        downloadLink.download = `rapport-${url.replace(/https?:\/\//, '').replace(/\W+/g, '-')}.pdf`;
+        fullscreenLink.href = pdfUrl;
+        fullscreenLink.target = '_blank';
+        pdfActions.style.display = 'block';
+        statusDiv.textContent = 'Färdig! Rapporten visas nedan.';
+      } catch (err) {
+        statusDiv.textContent = 'Något gick fel: ' + err.message;
+        statusDiv.className = 'status error';
+      } finally {
+        form.querySelector('button').disabled = false;
+      }
+    };
+  </script>
+</body>
+</html>
