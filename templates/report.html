@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<title>Tillgänglighetsrapport</title>
+<style>
+  @page { size: A4; margin: 2cm; }
+  body { font-family: -apple-system, "Segoe UI", sans-serif; color: #222; line-height: 1.5; font-size: 13px; }
+  h1 { color: #1a1a1a; border-bottom: 2px solid #333; padding-bottom: 8px; font-size: 22px; }
+  h2 { color: #333; margin-top: 20px; font-size: 16px; }
+  .summary { background: #f3f3f3; padding: 14px 16px; border-radius: 6px; margin: 14px 0; }
+  .summary h2 { margin-top: 0; }
+  .issue { border-left: 4px solid #ccc; padding: 10px 14px; margin: 10px 0; background: #fafafa; page-break-inside: avoid; }
+  .critical { border-color: #c0392b; }
+  .serious  { border-color: #e67e22; }
+  .moderate { border-color: #f1c40f; }
+  .minor    { border-color: #95a5a6; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 600; color: white; }
+  .badge.critical { background: #c0392b; }
+  .badge.serious  { background: #e67e22; }
+  .badge.moderate { background: #f1c40f; color: #333; }
+  .badge.minor    { background: #95a5a6; }
+  .count { font-size: 11px; color: #666; margin-left: 6px; }
+  .citations { font-size: 11px; color: #555; margin: 4px 0; }
+  code { background: #eee; padding: 1px 4px; border-radius: 3px; font-size: 11px; word-break: break-all; }
+  pre { background: #2d2d2d; color: #eee; padding: 8px; border-radius: 4px; font-size: 10px; white-space: pre-wrap; word-wrap: break-word; margin: 4px 0; }
+  img, video, iframe, object, embed, svg { display: none !important; }
+  .affected { font-size: 11px; color: #444; margin: 6px 0; }
+  .affected li { margin: 2px 0; }
+  .disclaimer { font-size: 10px; color: #666; border-top: 1px solid #ddd; padding-top: 10px; margin-top: 20px; }
+</style>
+</head>
+<body>
+
+<h1>Tillgänglighetsrapport</h1>
+<p><strong>Granskad sida:</strong> {{ url }}</p>
+<p><strong>Datum:</strong> {{ scan_date }}</p>
+
+<div class="summary">
+<h2>Sammanfattning</h2>
+<p>Granskningen hittade <strong>{{ total_issues }}</strong> problem i <strong>{{ groups|length }}</strong> kategorier.</p>
+<ul>
+  <li>Kritiska: {{ count_by_impact.critical }}</li>
+  <li>Allvarliga: {{ count_by_impact.serious }}</li>
+  <li>Måttliga: {{ count_by_impact.moderate }}</li>
+  <li>Mindre: {{ count_by_impact.minor }}</li>
+</ul>
+</div>
+
+<h2>Hittade problem</h2>
+
+{% for group in groups %}
+<div class="issue {{ group.impact }}">
+  <p>
+    <span class="badge {{ group.impact }}">{{ group.impact|upper }}</span>
+    <strong>{{ group.wcag_reference }}</strong> — <code>{{ group.rule_id }}</code>
+    <span class="count">({{ group.count }} träff{{ "ar" if group.count > 1 else "" }})</span>
+  </p>
+
+  <p><strong>Problem:</strong> {{ group.plain_swedish }}</p>
+
+  <p><strong>Åtgärd:</strong> {{ group.suggested_fix }}</p>
+
+  {% if group.citations %}
+  <p class="citations"><strong>Källor:</strong>
+    {% for citation in group.citations %}{{ citation.reference }}{% if not loop.last %}, {% endif %}{% endfor %}
+  </p>
+  {% endif %}
+
+  {% if group.confidence == "low" %}
+  <p style="background: #fff3cd; padding: 4px 8px; border-radius: 3px; font-size: 11px;">⚠️ Osäkert förslag – granska manuellt.</p>
+  {% endif %}
+
+  {% if group.count <= 3 %}
+  <div class="affected">
+    <strong>Berörda element:</strong>
+    <ul>
+    {% for sel in group.selectors %}
+      <li><code>{{ sel.selector|truncate(120) }}</code></li>
+    {% endfor %}
+    </ul>
+  </div>
+  {% else %}
+  <div class="affected">
+    <strong>Berörda element ({{ group.count }} st):</strong>
+    <ul>
+    {% for sel in group.selectors[:3] %}
+      <li><code>{{ sel.selector|truncate(120) }}</code></li>
+    {% endfor %}
+      <li>… och {{ group.count - 3 }} till</li>
+    </ul>
+  </div>
+  {% endif %}
+
+  <p style="font-size: 10px"><a href="{{ group.help_url }}">Mer info hos axe-core</a></p>
+</div>
+{% endfor %}
+
+<div class="disclaimer">
+<p><strong>Om denna rapport:</strong> Problem identifierade av axe-core. Förklaringar genererade av GPT-4o baserat på officiell WCAG 2.2- och EAA-text via RAG. Automatisk granskning täcker ca 30–40 % av WCAG-brott. Manuell granskning rekommenderas som komplement.</p>
+</div>
+
+</body>
+</html>

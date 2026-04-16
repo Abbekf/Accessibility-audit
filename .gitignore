@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtuella miljöer
+venv/
+.env
+
+# OS/Editor-filer
+.DS_Store
+Thumbs.db
+
+# PDF-rapporter och tillfälliga filer
+*.pdf
+
+chroma_db/
+chroma_db/**
+chroma_db/*.db
+chroma_db/*.sqlite3
+
+__pycache__/
+*.pyc
