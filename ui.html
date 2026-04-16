@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <title>Tillgänglighetsrevisor – Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: -apple-system, Segoe UI, sans-serif; background: #f7f7f7; margin: 0; padding: 0; }
+    .container { max-width: 900px; min-width: 340px; margin: 60px auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 12px #0001; padding: 32px 28px; }
+    h1 { font-size: 1.5rem; margin-bottom: 18px; }
+    label { font-weight: 600; }
+    input[type="url"] { width: 100%; padding: 10px; font-size: 1rem; border: 1px solid #bbb; border-radius: 4px; margin: 10px 0 18px 0; }
+    button { background: #00796b; color: #fff; border: none; padding: 10px 22px; border-radius: 4px; font-size: 1rem; cursor: pointer; }
+    button:disabled { background: #ccc; }
+    .status { margin-top: 18px; font-size: 1rem; color: #00796b; }
+    .error { color: #c0392b; }
+    iframe { width: 100%; height: 600px; border: none; margin-top: 24px; }
+    .pdf-actions {
+      margin-top: 18px;
+      display: none;
+      display: flex;
+      flex-direction: row;
+      gap: 10px;
+      justify-content: space-between;
+      align-items: stretch;
+      width: 100%;
+    }
+    .pdf-actions button, .pdf-actions a {
+      flex: 1 1 0;
+      min-width: 0;
+      margin: 0;
+      padding: 12px 0;
+      font-size: 1.1rem;
+      border-radius: 4px;
+      border: none;
+      background: #00796b;
+      color: #fff;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-weight: 400;
+      transition: background 0.2s;
+      white-space: normal;
+      overflow: visible;
+      text-overflow: initial;
+      height: 48px;
+      box-sizing: border-box;
+      letter-spacing: normal;
+    }
+    @media (max-width: 600px) {
+      .pdf-actions {
+        flex-direction: column;
+        gap: 8px;
+      }
+      .pdf-actions button, .pdf-actions a {
+        width: 100%;
+      }
+    }
+    .pdf-viewer {
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      height: 90vh;
+      min-height: 600px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      margin: 24px auto 0 auto;
+      display: none;
+      background: #fff;
+      box-sizing: border-box;
+    }
+    .tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 24px;
+      padding: 10px 0;
+      border-bottom: 1px solid #ddd;
+    }
+    .tab {
+      flex: 1;
+      padding: 14px 0;
+      background: #f3f3f3;
+      border: none;
+      border-radius: 8px 8px 0 0;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      color: #333;
+      transition: background 0.2s;
+    }
+    .tab.active {
+      background: #fff;
+      color: #00796b;
+      border-bottom: 2px solid #00796b;
+    }
+    #tab-content-scan, #tab-content-saved { background: #fff; border-radius: 0 0 8px 8px; box-shadow: 0 2px 12px #0001; padding: 32px 28px; }
+    #tab-content-saved { min-height: 300px; }
+    form { display: flex; flex-direction: column; align-items: center; }
+    #scan-btn {
+      width: 100%;
+      margin-bottom: 18px;
+      margin-top: 8px;
+      font-weight: 400;
+      letter-spacing: normal;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Tillgänglighetsrevisor</h1>
+    <div class="tabs">
+      <button id="tab-scan" class="tab active">Ny granskning</button>
+      <button id="tab-saved" class="tab">Sparade rapporter</button>
+    </div>
+    <div id="tab-content-scan">
+      <form id="scan-form">
+        <label for="url">Webbplatsens URL:</label>
+        <input type="url" id="url" name="url" placeholder="https://www.exempel.se" required>
+        <button id="scan-btn" type="submit">Starta granskning</button>
+      </form>
+      <div class="status" id="status"></div>
+      <div class="pdf-actions" id="pdf-actions">
+        <a id="fullscreen-link" href="#" target="_blank">Visa i helskärm</a>
+        <button id="save-btn" type="button">Spara rapport</button>
+        <a id="download-link" href="#" download="rapport.pdf">Ladda ner PDF</a>
+      </div>
+      <iframe id="pdf-frame" class="pdf-viewer"></iframe>
+    </div>
+    <div id="tab-content-saved" style="display:none;">
+      <h2>Sparade rapporter</h2>
+      <ul id="saved-list"></ul>
+      <div id="no-saved" style="color:#888;">Inga rapporter sparade ännu.</div>
+    </div>
+  </div>
+  <script>
+    const form = document.getElementById('scan-form');
+    const statusDiv = document.getElementById('status');
+    const pdfFrame = document.getElementById('pdf-frame');
+    const pdfActions = document.getElementById('pdf-actions');
+    const downloadLink = document.getElementById('download-link');
+    const fullscreenLink = document.getElementById('fullscreen-link');
+    // Spara rapport-knapp
+    const saveBtn = document.getElementById('save-btn');
+    saveBtn.onclick = () => {
+      if (!lastPdfUrl || !lastUrl) return;
+      const saved = JSON.parse(localStorage.getItem('savedReports') || '[]');
+      const name = prompt('Namn på rapporten?', lastUrl) || lastUrl;
+      saved.push({
+        url: lastPdfUrl,
+        name,
+        date: lastDate || new Date().toLocaleString()
+      });
+      localStorage.setItem('savedReports', JSON.stringify(saved));
+      alert('Rapporten sparad!');
+    };
+    pdfActions.insertBefore(saveBtn, downloadLink);
+
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      statusDiv.textContent = '';
+      pdfFrame.style.display = 'none';
+      pdfFrame.classList.remove('pdf-viewer');
+      pdfActions.style.display = 'none';
+      const url = document.getElementById('url').value;
+      form.querySelector('button').disabled = true;
+      statusDiv.textContent = 'Granskar... detta kan ta upp till en minut.';
+      try {
+        const res = await fetch('/scan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url })
+        });
+        if (!res.ok) throw new Error('Fel vid granskning');
+        const blob = await res.blob();
+        const pdfUrl = URL.createObjectURL(blob);
+        pdfFrame.src = pdfUrl;
+        pdfFrame.style.display = 'block';
+        pdfFrame.classList.add('pdf-viewer');
+        downloadLink.href = pdfUrl;
+        downloadLink.download = `rapport-${url.replace(/https?:\/\//, '').replace(/\W+/g, '-')}.pdf`;
+        fullscreenLink.href = pdfUrl;
+        fullscreenLink.target = '_blank';
+        pdfActions.style.display = 'flex';
+        statusDiv.textContent = 'Färdig! Rapporten visas nedan.';
+        lastPdfUrl = pdfUrl;
+        lastUrl = url;
+        lastDate = new Date().toLocaleString();
+      } catch (err) {
+        statusDiv.textContent = 'Något gick fel: ' + err.message;
+        statusDiv.className = 'status error';
+      } finally {
+        form.querySelector('button').disabled = false;
+      }
+    };
+
+    // Tab-funktionalitet
+    const tabScan = document.getElementById('tab-scan');
+    const tabSaved = document.getElementById('tab-saved');
+    const tabContentScan = document.getElementById('tab-content-scan');
+    const tabContentSaved = document.getElementById('tab-content-saved');
+    tabScan.onclick = () => {
+      tabScan.classList.add('active');
+      tabSaved.classList.remove('active');
+      tabContentScan.style.display = '';
+      tabContentSaved.style.display = 'none';
+    };
+    tabSaved.onclick = () => {
+      tabSaved.classList.add('active');
+      tabScan.classList.remove('active');
+      tabContentScan.style.display = 'none';
+      tabContentSaved.style.display = '';
+      renderSavedReports();
+    };
+
+    // Sparade rapporter
+    const savedList = document.getElementById('saved-list');
+    const noSaved = document.getElementById('no-saved');
+    function renderSavedReports() {
+      const saved = JSON.parse(localStorage.getItem('savedReports') || '[]');
+      savedList.innerHTML = '';
+      if (!saved.length) {
+        noSaved.style.display = '';
+        return;
+      }
+      noSaved.style.display = 'none';
+      for (const report of saved) {
+        const li = document.createElement('li');
+        li.innerHTML = `<a href="${report.url}" target="_blank">${report.name}</a> <span style="color:#888;">(${report.date})</span>`;
+        savedList.appendChild(li);
+      }
+    }
+  </script>
+</body>
+</html>
