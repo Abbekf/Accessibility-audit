@@ -124,3 +124,26 @@ som slår upp i lagboken.
 - [ ] Ett frontend-gränssnitt istället för bara API
 - [ ] Databas för historik och trendanalys
 - [ ] Kontinuerlig övervakning (schemalagd scanning)
+
+## Webbaserat användargränssnitt (UI)
+
+Du kan nu använda verktyget direkt i webbläsaren:
+
+1. Starta servern:
+
+```bash
+uvicorn main:app --reload
+```
+
+2. Öppna http://localhost:8000/ i din webbläsare.
+
+### Funktioner i UI:t
+- **Skriv in valfri URL** och starta granskning direkt från sidan.
+- **Se PDF-rapporten** direkt i webbläsaren.
+- **Ladda ner PDF** eller **visa i helskärm** med ett klick.
+- **Spara rapporter** lokalt i webbläsaren och återöppna dem under fliken "Sparade rapporter".
+
+> **OBS!** Varje granskning använder OpenAI:s API och kan innebära en liten kostnad per körning.
+
+### API och CLI
+Du kan fortfarande använda `/scan`-endpointen direkt eller via t.ex. curl om du vill automatisera tester.
