@@ -22,8 +22,9 @@ Flödet:
 import asyncio
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import Response
+from fastapi.responses import Response, HTMLResponse
 from pydantic import BaseModel, HttpUrl
+from pathlib import Path
 
 from scanner import scan_url
 from explainer import explain_issue
@@ -44,13 +45,13 @@ class ScanRequest(BaseModel):
     url: HttpUrl
 
 
-@app.get("/")
-async def root():
-    """Enkel hälso-check så man ser att servern lever."""
-    return {
-        "status": "ok",
-        "message": "Tillgänglighetsrevisorn är igång. Se /docs för API-dokumentation.",
-    }
+
+
+@app.get("/", response_class=HTMLResponse)
+def serve_ui():
+    """Serverar det enkla UI:t för att skriva in URL."""
+    ui_path = Path(__file__).parent / "ui.html"
+    return HTMLResponse(ui_path.read_text(encoding="utf-8"))
 
 
 @app.post("/scan")
