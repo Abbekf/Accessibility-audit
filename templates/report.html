@@ -2,103 +2,1062 @@
 <html lang="sv">
 <head>
 <meta charset="utf-8">
-<title>Tillgänglighetsrapport</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tillgänglighetsrapport – {{ url }}</title>
 <style>
-  @page { size: A4; margin: 2cm; }
-  body { font-family: -apple-system, "Segoe UI", sans-serif; color: #222; line-height: 1.5; font-size: 13px; }
-  h1 { color: #1a1a1a; border-bottom: 2px solid #333; padding-bottom: 8px; font-size: 22px; }
-  h2 { color: #333; margin-top: 20px; font-size: 16px; }
-  .summary { background: #f3f3f3; padding: 14px 16px; border-radius: 6px; margin: 14px 0; }
-  .summary h2 { margin-top: 0; }
-  .issue { border-left: 4px solid #ccc; padding: 10px 14px; margin: 10px 0; background: #fafafa; page-break-inside: avoid; }
-  .critical { border-color: #c0392b; }
-  .serious  { border-color: #e67e22; }
-  .moderate { border-color: #f1c40f; }
-  .minor    { border-color: #95a5a6; }
-  .badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 600; color: white; }
-  .badge.critical { background: #c0392b; }
-  .badge.serious  { background: #e67e22; }
-  .badge.moderate { background: #f1c40f; color: #333; }
-  .badge.minor    { background: #95a5a6; }
-  .count { font-size: 11px; color: #666; margin-left: 6px; }
-  .citations { font-size: 11px; color: #555; margin: 4px 0; }
-  code { background: #eee; padding: 1px 4px; border-radius: 3px; font-size: 11px; word-break: break-all; }
-  pre { background: #2d2d2d; color: #eee; padding: 8px; border-radius: 4px; font-size: 10px; white-space: pre-wrap; word-wrap: break-word; margin: 4px 0; }
-  img, video, iframe, object, embed, svg { display: none !important; }
-  .affected { font-size: 11px; color: #444; margin: 6px 0; }
-  .affected li { margin: 2px 0; }
-  .disclaimer { font-size: 10px; color: #666; border-top: 1px solid #ddd; padding-top: 10px; margin-top: 20px; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --navy:     #0d1b4b;
+  --blue:     #1a4db5;
+  --blue-lt:  #eaf2ff;
+  --critical: #c0392b;
+  --critical-lt: #fdf0ef;
+  --serious:  #e05a00;
+  --serious-lt: #fff4ed;
+  --moderate: #b8860b;
+  --moderate-lt: #fffbeb;
+  --minor:    #5a6a7a;
+  --minor-lt: #f4f6f8;
+  --border:   #e2e8f4;
+  --bg:       #f0f4fa;
+  --white:    #fff;
+  --text:     #1a1a2e;
+  --muted:    #64748b;
+  --sidebar-w: 272px;
+  --radius:   10px;
+  --shadow:   0 1px 3px rgba(13,27,75,0.06), 0 4px 16px rgba(13,27,75,0.04);
+}
+
+body {
+  font-family: "Segoe UI", system-ui, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* ── Layout ── */
+.layout { display: flex; min-height: 100vh; }
+
+/* ── Sidebar ── */
+.sidebar {
+  width: var(--sidebar-w);
+  min-width: var(--sidebar-w);
+  background: var(--navy);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.12) transparent;
+}
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+
+.sb-header {
+  padding: 20px 18px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.sb-eyebrow {
+  font-size: 9.5px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #6a90d8;
+  margin-bottom: 6px;
+}
+.sb-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.3;
+}
+.sb-url {
+  font-size: 11px;
+  color: #8aaae0;
+  margin-top: 5px;
+  word-break: break-all;
+  line-height: 1.4;
+}
+.sb-date { font-size: 10px; color: #4e6a9a; margin-top: 3px; }
+
+/* Sidebar summary chips */
+.sb-summary {
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.sb-summary-title {
+  font-size: 9.5px;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  color: #4a6080;
+  margin-bottom: 2px;
+}
+.sev-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.sev-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.sev-label { font-size: 11.5px; color: #a0b8d8; flex: 1; }
+.sev-num { font-size: 13px; font-weight: 800; color: #fff; min-width: 24px; text-align: right; }
+.sev-bar-wrap { flex: 2; height: 5px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; }
+.sev-bar { height: 100%; border-radius: 3px; transition: width 0.4s ease; }
+.d-critical { background: var(--critical); }
+.d-serious  { background: var(--serious); }
+.d-moderate { background: #d4a017; }
+.d-minor    { background: var(--minor); }
+
+/* Sidebar nav */
+.sb-nav { padding: 8px 0 24px; flex: 1; }
+.sb-nav-label {
+  font-size: 9.5px;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  color: #4a6080;
+  padding: 10px 18px 5px;
+}
+.nav-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 9px 18px;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+  transition: background 0.12s, border-color 0.12s;
+}
+.nav-item:hover { background: rgba(255,255,255,0.05); }
+.nav-item.active {
+  background: rgba(26,77,181,0.22);
+  border-left-color: #7eaaff;
+}
+.nav-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+.nav-body { flex: 1; min-width: 0; }
+.nav-name { font-size: 12.5px; color: #c8d8f0; line-height: 1.35; }
+.nav-item.active .nav-name { color: #fff; font-weight: 600; }
+.nav-mini-bars { display: flex; gap: 2px; margin-top: 5px; height: 4px; }
+.nmb { border-radius: 2px; flex-shrink: 0; }
+.nav-badge {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 10px;
+  color: #fff;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.nb-critical { background: var(--critical); }
+.nb-serious  { background: var(--serious); }
+.nb-moderate { background: #d4a017; color: #222; }
+.nb-minor    { background: var(--minor); }
+.nb-none     { background: #2a4070; }
+
+/* ── Main ── */
+.main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+
+/* Topbar */
+.topbar {
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  padding: 11px 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 1px 6px rgba(13,27,75,0.06);
+}
+.topbar-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--navy);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 80px;
+}
+.search-wrap {
+  flex: 1;
+  position: relative;
+  max-width: 320px;
+}
+.search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 13px;
+  color: var(--muted);
+  pointer-events: none;
+}
+#search-input {
+  width: 100%;
+  padding: 6px 10px 6px 32px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 12.5px;
+  color: var(--text);
+  background: var(--bg);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+#search-input:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(26,77,181,0.1);
+  background: var(--white);
+}
+#search-input::placeholder { color: #aab8cc; }
+
+.topbar-count {
+  font-size: 11.5px;
+  color: var(--muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.filter-row { display: flex; gap: 5px; flex-shrink: 0; }
+.fbtn {
+  padding: 4px 11px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--white);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--muted);
+  transition: all 0.12s;
+  white-space: nowrap;
+}
+.fbtn:hover { border-color: var(--blue); color: var(--blue); }
+.fbtn.on  { background: var(--navy);    color: #fff; border-color: var(--navy); }
+.fbtn.fc.on { background: var(--critical); border-color: var(--critical); }
+.fbtn.fs.on { background: var(--serious);  border-color: var(--serious); }
+.fbtn.fm.on { background: #d4a017;         border-color: #d4a017; color: #222; }
+.fbtn.fi.on { background: var(--minor);    border-color: var(--minor); }
+
+/* ── Content ── */
+.content { padding: 22px 28px 40px; flex: 1; max-width: 1140px; }
+
+/* Dashboard */
+.dashboard {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 22px;
+}
+.dash-card {
+  background: var(--white);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-top: 3px solid var(--border);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: box-shadow 0.15s, transform 0.12s;
+}
+.dash-card:hover { box-shadow: 0 4px 20px rgba(13,27,75,0.13); transform: translateY(-1px); }
+.dash-card.active-filter { outline: 2px solid currentColor; outline-offset: 2px; }
+.dash-card.dc-critical { border-top-color: var(--critical); }
+.dash-card.dc-serious  { border-top-color: var(--serious); }
+.dash-card.dc-moderate { border-top-color: #d4a017; }
+.dash-card.dc-minor    { border-top-color: var(--minor); }
+.dash-num {
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--navy);
+}
+.dash-label { font-size: 11.5px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.dash-bar-wrap { height: 4px; background: var(--bg); border-radius: 2px; margin-top: 6px; overflow: hidden; }
+.dash-bar { height: 100%; border-radius: 2px; }
+.dash-card.dc-critical .dash-bar { background: var(--critical); }
+.dash-card.dc-serious  .dash-bar { background: var(--serious); }
+.dash-card.dc-moderate .dash-bar { background: #d4a017; }
+.dash-card.dc-minor    .dash-bar { background: var(--minor); }
+
+/* Cat header */
+.cat-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--border);
+}
+.cat-icon  { font-size: 20px; line-height: 1; }
+.cat-title { font-size: 18px; font-weight: 700; color: var(--navy); line-height: 1; }
+.cat-meta  { font-size: 12px; color: var(--muted); margin-left: auto; white-space: nowrap; }
+.cat-actions { display: flex; gap: 6px; }
+.cat-action-btn {
+  font-size: 11px;
+  color: var(--blue);
+  background: var(--blue-lt);
+  border: none;
+  border-radius: 5px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background 0.12s;
+}
+.cat-action-btn:hover { background: #d4e8ff; }
+
+/* ── Issue card ── */
+.issue-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 8px;
+  overflow: hidden;
+  transition: box-shadow 0.15s;
+  box-shadow: var(--shadow);
+}
+.issue-card:hover { box-shadow: 0 2px 18px rgba(13,27,75,0.09); }
+.issue-card[data-impact="critical"] { border-left-color: var(--critical); }
+.issue-card[data-impact="serious"]  { border-left-color: var(--serious); }
+.issue-card[data-impact="moderate"] { border-left-color: #d4a017; }
+.issue-card[data-impact="minor"]    { border-left-color: var(--minor); }
+
+/* Card summary */
+.card-summary {
+  padding: 13px 16px 11px;
+  cursor: pointer;
+  user-select: none;
+}
+.card-summary:hover { background: #fafbff; }
+
+.card-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+.impact-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: #fff;
+  flex-shrink: 0;
+}
+.ib-critical { background: var(--critical); }
+.ib-serious  { background: var(--serious); }
+.ib-moderate { background: #d4a017; color: #222; }
+.ib-minor    { background: var(--minor); }
+
+.card-wcag {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--blue);
+  background: var(--blue-lt);
+  padding: 2px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.card-rule {
+  font-size: 10px;
+  color: var(--muted);
+  background: #f0f4ff;
+  border: 1px solid #dde6ff;
+  padding: 1px 7px;
+  border-radius: 4px;
+  white-space: nowrap;
+  font-family: monospace;
+}
+.card-count-pill {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.chevron {
+  font-size: 10px;
+  color: #b0bdd8;
+  transition: transform 0.22s ease;
+  flex-shrink: 0;
+}
+.issue-card.open .chevron { transform: rotate(180deg); }
+
+.card-title-row {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.45;
+  margin-bottom: 6px;
+}
+
+/* Preview selectors in collapsed state */
+.card-preview {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+.preview-pill {
+  font-family: "Consolas", monospace;
+  font-size: 10.5px;
+  background: #f2f5fc;
+  border: 1px solid #dce5f5;
+  color: #3a4a70;
+  padding: 2px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.preview-more {
+  font-size: 10.5px;
+  color: var(--muted);
+  padding: 2px 4px;
+  align-self: center;
+}
+
+/* Card body */
+.card-body {
+  display: none;
+  border-top: 1px solid var(--border);
+  grid-template-columns: 1fr 1fr;
+}
+.issue-card.open .card-body { display: grid; }
+
+.card-panel { padding: 18px 20px; }
+.card-panel + .card-panel { border-left: 1px solid var(--border); }
+.panel-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #8899bb;
+  margin-bottom: 10px;
+}
+
+/* Fix text */
+.fix-body { font-size: 13px; color: var(--text); line-height: 1.65; }
+.fix-body p  { margin-bottom: 8px; }
+.fix-body p:last-child { margin-bottom: 0; }
+.fix-body code {
+  background: #eef2ff;
+  color: #1a3fa0;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-family: "Consolas", monospace;
+  word-break: break-all;
+}
+.fix-body pre {
+  background: #1a2035;
+  color: #c8d8f8;
+  padding: 12px 14px;
+  border-radius: 7px;
+  font-size: 11.5px;
+  font-family: "Consolas", monospace;
+  white-space: pre-wrap;
+  word-break: break-all;
+  margin: 8px 0;
+  line-height: 1.6;
+}
+
+.low-conf {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  background: #fffbeb;
+  border: 1px solid #f0c040;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: #7a5500;
+  margin-top: 10px;
+  line-height: 1.5;
+}
+
+.card-footer {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.citations-text { font-size: 11px; color: var(--muted); flex: 1; }
+.axe-link {
+  font-size: 11px;
+  color: var(--blue);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.axe-link:hover { text-decoration: underline; }
+
+/* Affected elements */
+.screenshot {
+  max-width: 100%;
+  max-height: 160px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 12px;
+  display: block;
+  object-fit: cover;
+  object-position: top;
+}
+.screenshot-label {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: -8px;
+  margin-bottom: 10px;
+  font-style: italic;
+}
+
+.el-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.el-item { font-size: 12.5px; }
+.el-label { font-weight: 600; color: var(--text); margin-bottom: 3px; font-size: 12px; }
+.el-html {
+  font-family: "Consolas", monospace;
+  font-size: 11px;
+  background: #f4f7ff;
+  border: 1px solid #dce6ff;
+  border-radius: 5px;
+  padding: 6px 10px;
+  color: #2a3a70;
+  word-break: break-all;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.el-html:hover { background: #e4eeff; }
+.copy-hint { font-size: 9.5px; color: #a0b0cc; margin-top: 2px; }
+
+.show-more-btn {
+  margin-top: 6px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 11px;
+  color: var(--blue);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.show-more-btn:hover { background: var(--blue-lt); border-color: #b0c8f0; }
+
+/* No-results */
+.no-results {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--muted);
+}
+.no-results .icon { font-size: 32px; margin-bottom: 10px; }
+.no-results strong { color: var(--navy); display: block; margin-bottom: 4px; }
+
+/* Empty (no issues at all) */
+.all-clear {
+  text-align: center;
+  padding: 72px 24px;
+}
+.all-clear .icon { font-size: 48px; margin-bottom: 14px; }
+.all-clear h2 { font-size: 20px; color: var(--navy); margin-bottom: 8px; }
+.all-clear p  { font-size: 13px; color: var(--muted); max-width: 400px; margin: 0 auto; }
+
+/* Search highlight */
+mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
+
+/* Disclaimer */
+.disclaimer {
+  background: var(--white);
+  border-top: 1px solid var(--border);
+  padding: 12px 28px;
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #1a2035;
+  color: #fff;
+  padding: 9px 16px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(6px);
+  transition: opacity 0.18s, transform 0.18s;
+  z-index: 999;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+
+/* Search no results */
+.search-empty {
+  display: none;
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--muted);
+}
+.search-empty .icon { font-size: 32px; margin-bottom: 10px; }
 </style>
 </head>
 <body>
+<div class="layout">
 
-<h1>Tillgänglighetsrapport</h1>
-<p><strong>Granskad sida:</strong> {{ url }}</p>
-<p><strong>Datum:</strong> {{ scan_date }}</p>
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="sb-header">
+      <div class="sb-eyebrow">Tillgänglighetsrapport · WCAG 2.2</div>
+      <div class="sb-title">Granskningsresultat</div>
+      <div class="sb-url">{{ url }}</div>
+      <div class="sb-date">{{ scan_date }}</div>
+    </div>
 
-<div class="summary">
-<h2>Sammanfattning</h2>
-<p>Granskningen hittade <strong>{{ total_issues }}</strong> problem i <strong>{{ groups|length }}</strong> kategorier.</p>
-<ul>
-  <li>Kritiska: {{ count_by_impact.critical }}</li>
-  <li>Allvarliga: {{ count_by_impact.serious }}</li>
-  <li>Måttliga: {{ count_by_impact.moderate }}</li>
-  <li>Mindre: {{ count_by_impact.minor }}</li>
-</ul>
-</div>
+    {% set total = count_by_impact.critical + count_by_impact.serious + count_by_impact.moderate + count_by_impact.minor %}
+    <div class="sb-summary">
+      <div class="sb-summary-title">Totalt {{ total }} problem</div>
+      {% for sev, label, cls in [
+          (count_by_impact.critical, 'Kritiska',   'critical'),
+          (count_by_impact.serious,  'Allvarliga',  'serious'),
+          (count_by_impact.moderate, 'Måttliga',    'moderate'),
+          (count_by_impact.minor,    'Mindre',      'minor')
+      ] %}
+      <div class="sev-row">
+        <span class="sev-dot d-{{ cls }}"></span>
+        <span class="sev-label">{{ label }}</span>
+        <span class="sev-num">{{ sev }}</span>
+        <div class="sev-bar-wrap">
+          <div class="sev-bar d-{{ cls }}"
+               style="width: {{ ((sev / total * 100) | int) if total > 0 else 0 }}%"></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
 
-<h2>Hittade problem</h2>
+    <nav class="sb-nav">
+      <div class="sb-nav-label">Kategorier</div>
+      {% for cat in digg_groups %}
+      {% set ct = namespace(c=0, s=0, m=0, i=0) %}
+      {% for iss in cat.issues %}
+        {% if iss.impact == 'critical' %}{% set ct.c = ct.c + 1 %}
+        {% elif iss.impact == 'serious' %}{% set ct.s = ct.s + 1 %}
+        {% elif iss.impact == 'moderate' %}{% set ct.m = ct.m + 1 %}
+        {% else %}{% set ct.i = ct.i + 1 %}{% endif %}
+      {% endfor %}
+      {% set cat_total = ct.c + ct.s + ct.m + ct.i %}
+      <div class="nav-item{% if loop.first %} active{% endif %}"
+           onclick="showCat({{ loop.index0 }}, this)">
+        <span class="nav-icon">{{ cat.icon }}</span>
+        <div class="nav-body">
+          <div class="nav-name">{{ cat.category }}</div>
+          <div class="nav-mini-bars">
+            {% if ct.c > 0 %}<div class="nmb d-critical" style="width:{{ [(ct.c / cat_total * 60)|int, 4]|max }}px"></div>{% endif %}
+            {% if ct.s > 0 %}<div class="nmb d-serious"  style="width:{{ [(ct.s / cat_total * 60)|int, 4]|max }}px"></div>{% endif %}
+            {% if ct.m > 0 %}<div class="nmb d-moderate" style="width:{{ [(ct.m / cat_total * 60)|int, 4]|max }}px"></div>{% endif %}
+            {% if ct.i > 0 %}<div class="nmb d-minor"    style="width:{{ [(ct.i / cat_total * 60)|int, 4]|max }}px"></div>{% endif %}
+          </div>
+        </div>
+        <span class="nav-badge nb-{{ cat.worst_impact }}">{{ cat.issues|length }}</span>
+      </div>
+      {% endfor %}
+    </nav>
+  </aside>
 
-{% for group in groups %}
-<div class="issue {{ group.impact }}">
-  <p>
-    <span class="badge {{ group.impact }}">{{ group.impact|upper }}</span>
-    <strong>{{ group.wcag_reference }}</strong> — <code>{{ group.rule_id }}</code>
-    <span class="count">({{ group.count }} träff{{ "ar" if group.count > 1 else "" }})</span>
-  </p>
+  <!-- ── Main ── -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="topbar-title">
+        {% if digg_groups %}{{ digg_groups[0].icon }} {{ digg_groups[0].category }}{% endif %}
+      </div>
 
-  <p><strong>Problem:</strong> {{ group.plain_swedish }}</p>
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="search-input" placeholder="Sök problem, regel, WCAG…" oninput="onSearch(this.value)">
+      </div>
 
-  <p><strong>Åtgärd:</strong> {{ group.suggested_fix }}</p>
+      <span class="topbar-count" id="topbar-count"></span>
 
-  {% if group.citations %}
-  <p class="citations"><strong>Källor:</strong>
-    {% for citation in group.citations %}{{ citation.reference }}{% if not loop.last %}, {% endif %}{% endfor %}
-  </p>
-  {% endif %}
+      <div class="filter-row">
+        <button class="fbtn on"  onclick="setFilter('all',      this)">Alla</button>
+        <button class="fbtn fc"  onclick="setFilter('critical', this)">Kritiska</button>
+        <button class="fbtn fs"  onclick="setFilter('serious',  this)">Allvarliga</button>
+        <button class="fbtn fm"  onclick="setFilter('moderate', this)">Måttliga</button>
+        <button class="fbtn fi"  onclick="setFilter('minor',    this)">Mindre</button>
+      </div>
+    </div>
 
-  {% if group.confidence == "low" %}
-  <p style="background: #fff3cd; padding: 4px 8px; border-radius: 3px; font-size: 11px;">⚠️ Osäkert förslag – granska manuellt.</p>
-  {% endif %}
+    <div class="content" id="content">
 
-  {% if group.count <= 3 %}
-  <div class="affected">
-    <strong>Berörda element:</strong>
-    <ul>
-    {% for sel in group.selectors %}
-      <li><code>{{ sel.selector|truncate(120) }}</code></li>
-    {% endfor %}
-    </ul>
+      <!-- Dashboard -->
+      {% set total = count_by_impact.critical + count_by_impact.serious + count_by_impact.moderate + count_by_impact.minor %}
+      {% if total > 0 %}
+      <div class="dashboard" id="dashboard">
+        {% for sev, label, cls in [
+            (count_by_impact.critical, 'Kritiska',  'critical'),
+            (count_by_impact.serious,  'Allvarliga', 'serious'),
+            (count_by_impact.moderate, 'Måttliga',  'moderate'),
+            (count_by_impact.minor,    'Mindre',    'minor')
+        ] %}
+        <div class="dash-card dc-{{ cls }}" onclick="dashFilter('{{ cls }}', this)" title="Filtrera på {{ label | lower }}">
+          <div class="dash-num">{{ sev }}</div>
+          <div class="dash-label">{{ label }}</div>
+          <div class="dash-bar-wrap">
+            <div class="dash-bar" style="width:{{ ((sev / total * 100)|int) if total > 0 else 0 }}%"></div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- Search empty state -->
+      <div class="search-empty" id="search-empty">
+        <div class="icon">🔍</div>
+        <strong>Inga träffar för "<span id="search-term-display"></span>"</strong>
+        <p>Prova ett annat sökord eller rensa sökningen.</p>
+      </div>
+
+      {% for cat in digg_groups %}
+      <div class="cat-view" id="cat-{{ loop.index0 }}"
+           style="{{ '' if loop.first else 'display:none' }}">
+
+        <div class="cat-header">
+          <span class="cat-icon">{{ cat.icon }}</span>
+          <span class="cat-title">{{ cat.category }}</span>
+          <span class="cat-meta">{{ cat.issues|length }} problem</span>
+          <div class="cat-actions">
+            <button class="cat-action-btn" onclick="expandAll({{ loop.index0 }})">Expandera alla</button>
+            <button class="cat-action-btn" onclick="collapseAll({{ loop.index0 }})">Kollapsa alla</button>
+          </div>
+        </div>
+
+        {% for issue in cat.issues %}
+        <div class="issue-card" data-impact="{{ issue.impact }}"
+             data-search="{{ (issue.plain_swedish ~ ' ' ~ issue.rule_id ~ ' ' ~ (issue.wcag_reference or '') ~ ' ' ~ issue.selectors|map(attribute='label')|join(' ')) | lower | striptags }}">
+
+          <div class="card-summary" onclick="toggleCard(this.parentElement)">
+            <div class="card-meta-row">
+              <span class="impact-badge ib-{{ issue.impact }}">{{ issue.impact }}</span>
+              {% if issue.wcag_reference %}
+              <span class="card-wcag">{{ issue.wcag_reference }}</span>
+              {% endif %}
+              <span class="card-rule">{{ issue.rule_id }}</span>
+              <span class="card-count-pill">
+                {{ issue.count }} träff{{ "ar" if issue.count > 1 else "" }}
+                <span class="chevron">▼</span>
+              </span>
+            </div>
+            <div class="card-title-row">{{ issue.plain_swedish | striptags }}</div>
+            {% if issue.selectors %}
+            <div class="card-preview">
+              {% for sel in issue.selectors[:2] %}
+              <span class="preview-pill">{{ sel.label }}</span>
+              {% endfor %}
+              {% if issue.selectors|length > 2 %}
+              <span class="preview-more">+{{ issue.selectors|length - 2 }} till</span>
+              {% endif %}
+            </div>
+            {% endif %}
+          </div>
+
+          <div class="card-body">
+            <!-- Left: fix -->
+            <div class="card-panel">
+              <div class="panel-label">Problem &amp; åtgärd</div>
+              <div class="fix-body">{{ issue.suggested_fix | safe }}</div>
+
+              {% if issue.confidence == "low" %}
+              <div class="low-conf">⚠️ Osäkert AI-förslag — verifiera manuellt innan åtgärd.</div>
+              {% endif %}
+
+              <div class="card-footer">
+                {% if issue.citations %}
+                <span class="citations-text">
+                  <strong>Källor:</strong>
+                  {% for c in issue.citations %}{{ c.reference }}{% if not loop.last %} · {% endif %}{% endfor %}
+                </span>
+                {% endif %}
+                <a class="axe-link" href="{{ issue.help_url }}" target="_blank" rel="noopener">
+                  Mer info hos axe-core →
+                </a>
+              </div>
+            </div>
+
+            <!-- Right: elements -->
+            <div class="card-panel">
+              <div class="panel-label">Berörda element ({{ issue.count }} st)</div>
+
+              {% if issue.screenshot_b64 and issue.count <= 5 %}
+              <img class="screenshot"
+                   src="data:image/png;base64,{{ issue.screenshot_b64 }}"
+                   alt="Skärmdump av första träffade elementet">
+              <div class="screenshot-label">Skärmdump: första träffen</div>
+              {% endif %}
+
+              <ul class="el-list">
+                {% for sel in issue.selectors %}
+                <li class="el-item{% if loop.index > 5 %} el-extra{% endif %}"
+                    {% if loop.index > 5 %}style="display:none"{% endif %}>
+                  <div class="el-label">{{ sel.label }}</div>
+                  {% if sel.html %}
+                  <div class="el-html"
+                       onclick="copyEl(this, '{{ sel.html | replace("'","&#39;") | replace("\\","\\\\") }}')"
+                       title="Klicka för att kopiera HTML">{{ sel.html }}</div>
+                  <div class="copy-hint">Klicka för att kopiera</div>
+                  {% endif %}
+                </li>
+                {% endfor %}
+              </ul>
+
+              {% if issue.selectors|length > 5 %}
+              <button class="show-more-btn"
+                      onclick="toggleExtra(this)"
+                      data-total="{{ issue.selectors|length }}">
+                Visa alla {{ issue.selectors|length }} element ▼
+              </button>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+
+        <div class="no-results" id="no-results-{{ loop.index0 }}" style="display:none">
+          <div class="icon">🔍</div>
+          <strong>Inga problem matchar det valda filtret.</strong>
+          <p>Prova ett annat filter eller välj "Alla".</p>
+        </div>
+      </div>
+      {% endfor %}
+
+      {% if not digg_groups %}
+      <div class="all-clear">
+        <div class="icon">✅</div>
+        <h2>Inga automatiskt detekterade problem!</h2>
+        <p>Automatisk granskning täcker ca 30–40 % av WCAG-brott. Manuell granskning rekommenderas alltid som komplement.</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="disclaimer">
+      Problem identifierade av <strong>axe-core</strong>. Förklaringar genererade av AI baserat på officiell WCAG 2.2- och EAA-text via RAG.
+      Automatisk granskning täcker ca 30–40 % av WCAG-brott — manuell granskning rekommenderas alltid som komplement.
+    </div>
   </div>
-  {% else %}
-  <div class="affected">
-    <strong>Berörda element ({{ group.count }} st):</strong>
-    <ul>
-    {% for sel in group.selectors[:3] %}
-      <li><code>{{ sel.selector|truncate(120) }}</code></li>
-    {% endfor %}
-      <li>… och {{ group.count - 3 }} till</li>
-    </ul>
-  </div>
-  {% endif %}
-
-  <p style="font-size: 10px"><a href="{{ group.help_url }}">Mer info hos axe-core</a></p>
-</div>
-{% endfor %}
-
-<div class="disclaimer">
-<p><strong>Om denna rapport:</strong> Problem identifierade av axe-core. Förklaringar genererade av GPT-4o baserat på officiell WCAG 2.2- och EAA-text via RAG. Automatisk granskning täcker ca 30–40 % av WCAG-brott. Manuell granskning rekommenderas som komplement.</p>
 </div>
 
+<div class="toast" id="toast">Kopierat! ✓</div>
+
+<script>
+let currentFilter = 'all';
+let currentCatIdx = 0;
+let currentSearch = '';
+
+function showCat(idx, el) {
+  document.querySelectorAll('.cat-view').forEach(v => v.style.display = 'none');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const view = document.getElementById('cat-' + idx);
+  if (view) view.style.display = '';
+  el.classList.add('active');
+  currentCatIdx = idx;
+  const icon = el.querySelector('.nav-icon')?.textContent || '';
+  const name = el.querySelector('.nav-name')?.textContent || '';
+  document.getElementById('topbar-title').textContent = icon + ' ' + name;
+  applyFilterAndSearch(idx);
+}
+
+function toggleCard(card) {
+  card.classList.toggle('open');
+}
+
+function expandAll(idx) {
+  const view = document.getElementById('cat-' + idx);
+  if (!view) return;
+  view.querySelectorAll('.issue-card').forEach(c => {
+    if (c.style.display !== 'none') c.classList.add('open');
+  });
+}
+
+function collapseAll(idx) {
+  const view = document.getElementById('cat-' + idx);
+  if (!view) return;
+  view.querySelectorAll('.issue-card').forEach(c => c.classList.remove('open'));
+}
+
+function dashFilter(impact, card) {
+  const isActive = card.classList.contains('active-filter');
+  document.querySelectorAll('.dash-card').forEach(c => c.classList.remove('active-filter'));
+  const targetImpact = isActive ? 'all' : impact;
+  if (!isActive) card.classList.add('active-filter');
+
+  currentFilter = targetImpact;
+  document.querySelectorAll('.fbtn').forEach(b => b.classList.remove('on'));
+  const map = { all: 0, critical: 1, serious: 2, moderate: 3, minor: 4 };
+  const fbtn = document.querySelectorAll('.fbtn')[map[targetImpact]];
+  if (fbtn) fbtn.classList.add('on');
+
+  if (targetImpact === 'all') {
+    // Restore single-category view
+    document.getElementById('dashboard') && (document.getElementById('dashboard').style.display = '');
+    document.querySelectorAll('.cat-view').forEach((v, i) => {
+      v.style.display = i === currentCatIdx ? '' : 'none';
+    });
+    document.querySelectorAll('.nav-item').forEach((n, i) => {
+      n.classList.toggle('active', i === currentCatIdx);
+    });
+    applyFilterAndSearch(currentCatIdx);
+    return;
+  }
+
+  // Show all categories filtered by impact
+  document.getElementById('dashboard') && (document.getElementById('dashboard').style.display = '');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.cat-view').forEach((view, idx) => {
+    const cards = view.querySelectorAll('.issue-card');
+    let catVisible = 0;
+    cards.forEach(c => {
+      const match = c.dataset.impact === targetImpact;
+      c.style.display = match ? '' : 'none';
+      if (match) catVisible++;
+    });
+    view.style.display = catVisible > 0 ? '' : 'none';
+    const noRes = document.getElementById('no-results-' + idx);
+    if (noRes) noRes.style.display = 'none';
+  });
+
+  const total = document.querySelectorAll(`.issue-card[data-impact="${targetImpact}"]`).length;
+  const countEl = document.getElementById('topbar-count');
+  if (countEl) countEl.textContent = `${total} problem`;
+
+  // Scroll to first visible card
+  const firstCard = document.querySelector(`.issue-card[data-impact="${targetImpact}"]`);
+  if (firstCard) firstCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function setFilter(impact, btn) {
+  currentFilter = impact;
+  document.querySelectorAll('.fbtn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  // Sync dashboard highlight
+  document.querySelectorAll('.dash-card').forEach(c => c.classList.remove('active-filter'));
+  if (impact !== 'all') {
+    const map = { critical: 0, serious: 1, moderate: 2, minor: 3 };
+    const cards = document.querySelectorAll('.dash-card');
+    if (cards[map[impact]]) cards[map[impact]].classList.add('active-filter');
+  }
+  applyFilterAndSearch(currentCatIdx);
+}
+
+function onSearch(val) {
+  currentSearch = val.trim().toLowerCase();
+  document.getElementById('search-empty').style.display = 'none';
+
+  if (currentSearch.length === 0) {
+    // Restore normal category view
+    document.getElementById('dashboard') && (document.getElementById('dashboard').style.display = '');
+    document.querySelectorAll('.cat-view').forEach((v, i) => {
+      v.style.display = i === currentCatIdx ? '' : 'none';
+    });
+    applyFilterAndSearch(currentCatIdx);
+    return;
+  }
+
+  // Hide dashboard and show all categories while searching
+  document.getElementById('dashboard') && (document.getElementById('dashboard').style.display = 'none');
+  document.querySelectorAll('.cat-view').forEach(v => v.style.display = '');
+
+  let totalVisible = 0;
+  document.querySelectorAll('.cat-view').forEach((view, idx) => {
+    const cards = view.querySelectorAll('.issue-card');
+    let catVisible = 0;
+    cards.forEach(card => {
+      const searchData = card.dataset.search || '';
+      const impactMatch = currentFilter === 'all' || card.dataset.impact === currentFilter;
+      const searchMatch = searchData.includes(currentSearch);
+      const show = impactMatch && searchMatch;
+      card.style.display = show ? '' : 'none';
+      if (show) catVisible++;
+    });
+    const noRes = document.getElementById('no-results-' + idx);
+    if (noRes) noRes.style.display = catVisible === 0 ? '' : 'none';
+    totalVisible += catVisible;
+  });
+
+  const countEl = document.getElementById('topbar-count');
+  if (countEl) countEl.textContent = `${totalVisible} träff${totalVisible !== 1 ? 'ar' : ''}`;
+
+  const searchEmpty = document.getElementById('search-empty');
+  if (totalVisible === 0) {
+    searchEmpty.style.display = 'block';
+    document.getElementById('search-term-display').textContent = currentSearch;
+  }
+
+  // Update sidebar active state — deactivate while searching
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+}
+
+function applyFilterAndSearch(idx) {
+  if (currentSearch.length > 0) {
+    onSearch(currentSearch);
+    return;
+  }
+  const view = document.getElementById('cat-' + idx);
+  if (!view) return;
+  const cards = view.querySelectorAll('.issue-card');
+  let visible = 0;
+  cards.forEach(card => {
+    const match = currentFilter === 'all' || card.dataset.impact === currentFilter;
+    card.style.display = match ? '' : 'none';
+    if (match) visible++;
+  });
+  const noRes = document.getElementById('no-results-' + idx);
+  if (noRes) noRes.style.display = visible === 0 ? '' : 'none';
+  const total = cards.length;
+  const countEl = document.getElementById('topbar-count');
+  if (countEl) {
+    countEl.textContent = currentFilter === 'all'
+      ? `${total} problem`
+      : `${visible} av ${total} visas`;
+  }
+}
+
+function toggleExtra(btn) {
+  const card  = btn.closest('.card-panel');
+  const extras = card.querySelectorAll('.el-extra');
+  const open   = extras[0]?.style.display !== 'none';
+  extras.forEach(el => el.style.display = open ? 'none' : '');
+  const total  = btn.dataset.total;
+  btn.innerHTML = open ? `Visa alla ${total} element ▼` : `Dölj extra element ▲`;
+}
+
+function copyEl(el, text) {
+  const decoded = text.replace(/&#39;/g, "'");
+  navigator.clipboard.writeText(decoded).then(() => {
+    el.style.background = '#d4edff';
+    setTimeout(() => el.style.background = '', 800);
+    const t = document.getElementById('toast');
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 1800);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => applyFilterAndSearch(0));
+</script>
 </body>
 </html>

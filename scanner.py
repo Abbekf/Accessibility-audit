@@ -15,6 +15,7 @@ LLM:en får bara se den här datan, den hittar aldrig på egna fel.
 """
 
 import asyncio
+import base64
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from playwright.async_api import async_playwright
@@ -44,6 +45,7 @@ class A11yIssue(BaseModel):
     help_url: str          # Länk till axe-core-dokumentationen
     affected_html: str     # Den HTML-snutt som är felaktig
     selector: str          # CSS-selektor så man kan hitta elementet
+    screenshot_b64: str = ""  # Base64-kodad skärmdump av elementet (om tillgänglig)
 
 
 async def scan_url(url: str) -> List[A11yIssue]:
@@ -96,28 +98,39 @@ async def _scan_url_async(url: str) -> List[A11yIssue]:
         # Vi kan köra JavaScript direkt i sidan med page.evaluate().
         results = await page.evaluate("async () => await axe.run()")
 
-        await browser.close()
-
-    # axe returnerar en lista "violations" (fel den är säker på)
-    # Vi översätter dem till vårt egna format
-    for violation in results.get("violations", []):
-        # Varje "violation" kan ha flera "nodes" – olika element på sidan
-        # som bryter mot samma regel. Vi skapar ett issue per node.
-        for node in violation.get("nodes", []):
-            # Ta första WCAG-taggen (t.ex. "wcag111") och formatera snyggt
+        # axe returnerar en lista "violations" (fel den är säker på)
+        # Vi översätter dem till vårt egna format
+        for violation in results.get("violations", []):
             wcag_tags = [t for t in violation.get("tags", []) if t.startswith("wcag")]
             wcag_ref = _format_wcag(wcag_tags[0]) if wcag_tags else "Okänd"
 
-            issues.append(A11yIssue(
-                rule_id=violation.get("id", ""),
-                wcag_reference=wcag_ref,
-                impact=violation.get("impact") or "unknown",
-                description=violation.get("description", ""),
-                help_text=violation.get("help", ""),
-                help_url=violation.get("helpUrl", ""),
-                affected_html=node.get("html", ""),
-                selector=", ".join(node.get("target", [])),
-            ))
+            # Ta en skärmdump av det första drabbade elementet per violation
+            screenshot_b64 = ""
+            nodes = violation.get("nodes", [])
+            first_target = nodes[0].get("target", []) if nodes else []
+            if first_target:
+                try:
+                    locator = page.locator(first_target[0]).first
+                    await locator.scroll_into_view_if_needed(timeout=2000)
+                    img_bytes = await locator.screenshot(timeout=3000)
+                    screenshot_b64 = base64.b64encode(img_bytes).decode()
+                except Exception:
+                    screenshot_b64 = ""
+
+            for node in nodes:
+                issues.append(A11yIssue(
+                    rule_id=violation.get("id", ""),
+                    wcag_reference=wcag_ref,
+                    impact=violation.get("impact") or "unknown",
+                    description=violation.get("description", ""),
+                    help_text=violation.get("help", ""),
+                    help_url=violation.get("helpUrl", ""),
+                    affected_html=node.get("html", ""),
+                    selector=", ".join(node.get("target", [])),
+                    screenshot_b64=screenshot_b64,
+                ))
+
+        await browser.close()
 
     return issues
 
