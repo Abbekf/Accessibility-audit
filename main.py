@@ -28,13 +28,15 @@ from pathlib import Path
 
 from scanner import scan_url
 from explainer import explain_issue
-from reporter import generate_pdf
+from reporter import generate_html
+from favicon_route import router as favicon_router
 
 
 app = FastAPI(
     title="Tillgänglighetsrevisor",
     description="Ett AI-assisterat verktyg som granskar webbsidor mot WCAG.",
 )
+app.include_router(favicon_router)
 
 
 class ScanRequest(BaseModel):
@@ -43,6 +45,8 @@ class ScanRequest(BaseModel):
     Pydantic validerar automatiskt att URL:en är giltig.
     """
     url: HttpUrl
+    provider: str = "openai"
+    model: str = "gpt-4o"
 
 
 
@@ -63,7 +67,7 @@ async def scan(request: ScanRequest) -> Response:
 
     try:
         # Steg 1: Hitta felen (fakta, ingen AI inblandad här)
-        issues = await scan_url(url_str)
+        issues, site_logo_b64 = await scan_url(url_str)
 
         if not issues:
             # Returnera 200 med ett meddelande istället för en tom PDF
@@ -74,22 +78,56 @@ async def scan(request: ScanRequest) -> Response:
                 media_type="text/plain; charset=utf-8",
             )
 
-        # Steg 2: Förklara varje fel med AI
-        # asyncio.gather kör alla förklaringar parallellt = snabbare
-        # Vi begränsar till 20 samtidiga anrop för att inte sprida API-limits
-        explained = await asyncio.gather(*[
-            explain_issue(issue) for issue in issues[:50]  # max 50 för MVP
+        # Steg 2: Förklara varje fel med AI.
+        # Bildregler: analyseras individuellt med vision (varje bild kan vara unik).
+        # Övriga regler: en förklaring per rule_id återanvänds för alla instanser.
+        from explainer import ExplainedIssue, IMAGE_RULES
+
+        seen_rule: dict = {}
+        issues_to_explain = []
+        for issue in issues:
+            if issue.rule_id in IMAGE_RULES:
+                issues_to_explain.append(issue)
+            elif issue.rule_id not in seen_rule:
+                seen_rule[issue.rule_id] = None
+                issues_to_explain.append(issue)
+
+        explanations_list = await asyncio.gather(*[
+            explain_issue(issue, provider=request.provider, model=request.model)
+            for issue in issues_to_explain[:80]
         ])
 
-        # Steg 3: Generera PDF-rapport
-        pdf_bytes = generate_pdf(url_str, list(explained))
+        explanation_by_rule: dict = {}
+        explanation_by_obj:  dict = {}
+        for exp in explanations_list:
+            if exp.issue.rule_id in IMAGE_RULES:
+                explanation_by_obj[id(exp.issue)] = exp
+            else:
+                explanation_by_rule[exp.issue.rule_id] = exp
 
-        # Returnera PDF:en med rätt filnamn
-        filename = f"a11y-rapport-{url_str.replace('https://', '').replace('/', '-')}.pdf"
+        explained = []
+        for issue in issues:
+            if issue.rule_id in IMAGE_RULES and id(issue) in explanation_by_obj:
+                explained.append(explanation_by_obj[id(issue)])
+            elif issue.rule_id in explanation_by_rule:
+                template = explanation_by_rule[issue.rule_id]
+                explained.append(ExplainedIssue(
+                    issue=issue,
+                    plain_swedish=template.plain_swedish,
+                    suggested_fix=template.suggested_fix,
+                    confidence=template.confidence,
+                    citations=template.citations,
+                    retrieved_chunks=template.retrieved_chunks,
+                ))
+
+        # Steg 3: Generera HTML-rapport
+        html_content = generate_html(url_str, list(explained), site_logo_b64=site_logo_b64)
+
+        filename = f"a11y-rapport-{url_str.replace('https://', '').replace('/', '-')}.html"
         return Response(
-            content=pdf_bytes,
-            media_type="application/pdf",
-            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+            content=html_content.encode("utf-8"),
+            media_type="text/html; charset=utf-8",
+            headers={"Content-Disposition": f'inline; filename="{filename}"'},
         )
 
     except Exception as e:

@@ -15,6 +15,7 @@ LLM:en får bara se den här datan, den hittar aldrig på egna fel.
 """
 
 import asyncio
+import base64
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from playwright.async_api import async_playwright
@@ -44,9 +45,10 @@ class A11yIssue(BaseModel):
     help_url: str          # Länk till axe-core-dokumentationen
     affected_html: str     # Den HTML-snutt som är felaktig
     selector: str          # CSS-selektor så man kan hitta elementet
+    screenshot_b64: str = ""  # Base64-kodad skärmdump av elementet (om tillgänglig)
 
 
-async def scan_url(url: str) -> List[A11yIssue]:
+async def scan_url(url: str) -> tuple[List[A11yIssue], str]:
     """
     Öppnar en webbläsare, besöker URL:en och kör axe-core.
     Returnerar en lista med hittade problem.
@@ -96,30 +98,97 @@ async def _scan_url_async(url: str) -> List[A11yIssue]:
         # Vi kan köra JavaScript direkt i sidan med page.evaluate().
         results = await page.evaluate("async () => await axe.run()")
 
-        await browser.close()
-
-    # axe returnerar en lista "violations" (fel den är säker på)
-    # Vi översätter dem till vårt egna format
-    for violation in results.get("violations", []):
-        # Varje "violation" kan ha flera "nodes" – olika element på sidan
-        # som bryter mot samma regel. Vi skapar ett issue per node.
-        for node in violation.get("nodes", []):
-            # Ta första WCAG-taggen (t.ex. "wcag111") och formatera snyggt
+        # axe returnerar en lista "violations" (fel den är säker på)
+        # Vi översätter dem till vårt egna format
+        for violation in results.get("violations", []):
             wcag_tags = [t for t in violation.get("tags", []) if t.startswith("wcag")]
             wcag_ref = _format_wcag(wcag_tags[0]) if wcag_tags else "Okänd"
 
-            issues.append(A11yIssue(
-                rule_id=violation.get("id", ""),
-                wcag_reference=wcag_ref,
-                impact=violation.get("impact") or "unknown",
-                description=violation.get("description", ""),
-                help_text=violation.get("help", ""),
-                help_url=violation.get("helpUrl", ""),
-                affected_html=node.get("html", ""),
-                selector=", ".join(node.get("target", [])),
-            ))
+            # Ta en kontextskärmdump: scrolla till elementet, markera det med
+            # en röd ram och fotografera hela viewporten så man ser var på sidan det sitter.
+            screenshot_b64 = ""
+            nodes = violation.get("nodes", [])
+            first_target = nodes[0].get("target", []) if nodes else []
+            if first_target:
+                try:
+                    selector = first_target[0]
+                    locator = page.locator(selector).first
+                    await locator.scroll_into_view_if_needed(timeout=2000)
+                    # Lägg på en synlig markering
+                    await page.evaluate(
+                        """sel => {
+                            const el = document.querySelector(sel);
+                            if (el) {
+                                el.dataset._a11yOld = el.style.outline;
+                                el.style.outline = '3px solid #e53e3e';
+                                el.style.outlineOffset = '2px';
+                            }
+                        }""",
+                        selector,
+                    )
+                    img_bytes = await page.screenshot(timeout=4000)
+                    screenshot_b64 = base64.b64encode(img_bytes).decode()
+                    # Ta bort markeringen igen
+                    await page.evaluate(
+                        """sel => {
+                            const el = document.querySelector(sel);
+                            if (el) {
+                                el.style.outline = el.dataset._a11yOld || '';
+                                el.style.outlineOffset = '';
+                                delete el.dataset._a11yOld;
+                            }
+                        }""",
+                        selector,
+                    )
+                except Exception:
+                    screenshot_b64 = ""
 
-    return issues
+            for node in nodes:
+                issues.append(A11yIssue(
+                    rule_id=violation.get("id", ""),
+                    wcag_reference=wcag_ref,
+                    impact=violation.get("impact") or "unknown",
+                    description=violation.get("description", ""),
+                    help_text=violation.get("help", ""),
+                    help_url=violation.get("helpUrl", ""),
+                    affected_html=node.get("html", ""),
+                    selector=", ".join(node.get("target", [])),
+                    screenshot_b64=screenshot_b64,
+                ))
+
+        site_logo_b64 = await _fetch_site_logo(page)
+        await browser.close()
+
+    return issues, site_logo_b64
+
+
+async def _fetch_site_logo(page) -> str:
+    """Försöker hämta sidans logotyp: og:image → apple-touch-icon → favicon."""
+    import httpx
+    from urllib.parse import urljoin
+
+    candidates = await page.evaluate("""() => {
+        const metas = [
+            document.querySelector('meta[property="og:image"]')?.content,
+            document.querySelector('meta[name="twitter:image"]')?.content,
+            document.querySelector('link[rel="apple-touch-icon"]')?.href,
+            document.querySelector('link[rel~="icon"][sizes="192x192"]')?.href,
+            document.querySelector('link[rel~="icon"][sizes="180x180"]')?.href,
+            document.querySelector('link[rel~="icon"][sizes="128x128"]')?.href,
+            document.querySelector('link[rel~="icon"]')?.href,
+        ];
+        return metas.filter(Boolean);
+    }""")
+
+    for url in candidates:
+        try:
+            async with httpx.AsyncClient(timeout=6, follow_redirects=True) as client:
+                r = await client.get(url)
+            if r.status_code == 200 and r.headers.get("content-type", "").startswith("image"):
+                return base64.b64encode(r.content).decode()
+        except Exception:
+            continue
+    return ""
 
 
 def _format_wcag(tag: str) -> str:

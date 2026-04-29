@@ -2,103 +2,1840 @@
 <html lang="sv">
 <head>
 <meta charset="utf-8">
-<title>Tillgänglighetsrapport</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tillgänglighetsrapport – {{ url }}</title>
 <style>
-  @page { size: A4; margin: 2cm; }
-  body { font-family: -apple-system, "Segoe UI", sans-serif; color: #222; line-height: 1.5; font-size: 13px; }
-  h1 { color: #1a1a1a; border-bottom: 2px solid #333; padding-bottom: 8px; font-size: 22px; }
-  h2 { color: #333; margin-top: 20px; font-size: 16px; }
-  .summary { background: #f3f3f3; padding: 14px 16px; border-radius: 6px; margin: 14px 0; }
-  .summary h2 { margin-top: 0; }
-  .issue { border-left: 4px solid #ccc; padding: 10px 14px; margin: 10px 0; background: #fafafa; page-break-inside: avoid; }
-  .critical { border-color: #c0392b; }
-  .serious  { border-color: #e67e22; }
-  .moderate { border-color: #f1c40f; }
-  .minor    { border-color: #95a5a6; }
-  .badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 600; color: white; }
-  .badge.critical { background: #c0392b; }
-  .badge.serious  { background: #e67e22; }
-  .badge.moderate { background: #f1c40f; color: #333; }
-  .badge.minor    { background: #95a5a6; }
-  .count { font-size: 11px; color: #666; margin-left: 6px; }
-  .citations { font-size: 11px; color: #555; margin: 4px 0; }
-  code { background: #eee; padding: 1px 4px; border-radius: 3px; font-size: 11px; word-break: break-all; }
-  pre { background: #2d2d2d; color: #eee; padding: 8px; border-radius: 4px; font-size: 10px; white-space: pre-wrap; word-wrap: break-word; margin: 4px 0; }
-  img, video, iframe, object, embed, svg { display: none !important; }
-  .affected { font-size: 11px; color: #444; margin: 6px 0; }
-  .affected li { margin: 2px 0; }
-  .disclaimer { font-size: 10px; color: #666; border-top: 1px solid #ddd; padding-top: 10px; margin-top: 20px; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --navy:     #0d1b4b;
+  --blue:     #1a4db5;
+  --blue-lt:  #eaf2ff;
+  --critical: #c0392b;
+  --critical-lt: #fdf0ef;
+  --serious:  #e05a00;
+  --serious-lt: #fff4ed;
+  --moderate: #b8860b;
+  --moderate-lt: #fffbeb;
+  --minor:    #5a6a7a;
+  --minor-lt: #f4f6f8;
+  --border:   #e2e8f4;
+  --bg:       #f0f4fa;
+  --white:    #fff;
+  --text:     #1a1a2e;
+  --muted:    #64748b;
+  --sidebar-w: 272px;
+  --radius:   10px;
+  --shadow:   0 1px 3px rgba(13,27,75,0.06), 0 4px 16px rgba(13,27,75,0.04);
+}
+
+body {
+  font-family: "Segoe UI", system-ui, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* ── Layout ── */
+.layout { display: flex; min-height: 100vh; }
+
+/* ── Sidebar ── */
+.sidebar {
+  width: var(--sidebar-w);
+  min-width: var(--sidebar-w);
+  background: var(--navy);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.12) transparent;
+}
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+
+.sb-header {
+  padding: 20px 18px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.sb-eyebrow {
+  font-size: 9.5px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #6a90d8;
+  margin-bottom: 6px;
+}
+.sb-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.3;
+}
+.sb-url {
+  font-size: 11px;
+  color: #8aaae0;
+  margin-top: 5px;
+  word-break: break-all;
+  line-height: 1.4;
+}
+.sb-date { font-size: 10px; color: #4e6a9a; margin-top: 3px; }
+
+.sb-logo-wrap { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.sb-logo {
+  height: 36px;
+  width: auto;
+  max-width: 100px;
+  object-fit: contain;
+  border-radius: 5px;
+  background: rgba(255,255,255,0.08);
+  padding: 3px;
+  flex-shrink: 0;
+}
+.sb-logo-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.35;
+}
+
+/* Sidebar summary chips */
+.sb-summary {
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.sb-summary-title {
+  font-size: 9.5px;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  color: #4a6080;
+  margin-bottom: 2px;
+}
+.sev-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.sev-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.sev-label { font-size: 11.5px; color: #a0b8d8; flex: 1; }
+.sev-num { font-size: 13px; font-weight: 800; color: #fff; min-width: 24px; text-align: right; }
+.sev-bar-wrap { flex: 2; height: 5px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; }
+.sev-bar { height: 100%; border-radius: 3px; transition: width 0.4s ease; }
+.d-critical { background: var(--critical); }
+.d-serious  { background: var(--serious); }
+.d-moderate { background: #d4a017; }
+.d-minor    { background: var(--minor); }
+
+/* Sidebar nav */
+.sb-nav { padding: 8px 0 24px; flex: 1; }
+.sb-nav-label {
+  font-size: 9.5px;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  color: #4a6080;
+  padding: 10px 18px 5px;
+}
+.nav-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 9px 18px;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+  transition: background 0.12s, border-color 0.12s;
+}
+.nav-item:hover { background: rgba(255,255,255,0.05); }
+.nav-item.active {
+  background: rgba(26,77,181,0.22);
+  border-left-color: #7eaaff;
+}
+.nav-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+.nav-body { flex: 1; min-width: 0; }
+.nav-name { font-size: 12.5px; color: #c8d8f0; line-height: 1.35; }
+.nav-item.active .nav-name { color: #fff; font-weight: 600; }
+.nav-mini-bars { display: flex; gap: 2px; margin-top: 5px; height: 4px; }
+.nmb { border-radius: 2px; flex-shrink: 0; }
+.nav-badge {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 10px;
+  color: #fff;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.nb-critical { background: var(--critical); }
+.nb-serious  { background: var(--serious); }
+.nb-moderate { background: #d4a017; color: #222; }
+.nb-minor    { background: var(--minor); }
+.nb-none     { background: #2a4070; }
+
+/* ── Main ── */
+.main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+
+/* Topbar */
+.topbar {
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  padding: 11px 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 1px 6px rgba(13,27,75,0.06);
+}
+.topbar-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--navy);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 80px;
+}
+.search-wrap {
+  flex: 1;
+  position: relative;
+  max-width: 320px;
+}
+.search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 13px;
+  color: var(--muted);
+  pointer-events: none;
+}
+#search-input {
+  width: 100%;
+  padding: 6px 10px 6px 32px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 12.5px;
+  color: var(--text);
+  background: var(--bg);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+#search-input:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(26,77,181,0.1);
+  background: var(--white);
+}
+#search-input::placeholder { color: #aab8cc; }
+
+.topbar-count {
+  font-size: 11.5px;
+  color: var(--muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.filter-row { display: flex; gap: 5px; flex-shrink: 0; }
+.fbtn {
+  padding: 4px 11px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--white);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--muted);
+  transition: all 0.12s;
+  white-space: nowrap;
+}
+.fbtn:hover { border-color: var(--blue); color: var(--blue); }
+.fbtn.on  { background: var(--navy);    color: #fff; border-color: var(--navy); }
+.fbtn.fc.on { background: var(--critical); border-color: var(--critical); }
+.fbtn.fs.on { background: var(--serious);  border-color: var(--serious); }
+.fbtn.fm.on { background: #d4a017;         border-color: #d4a017; color: #222; }
+.fbtn.fi.on { background: var(--minor);    border-color: var(--minor); }
+
+/* ── Content ── */
+.content { padding: 22px 28px 40px; flex: 1; max-width: 1140px; }
+
+/* Dashboard */
+.dashboard {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 22px;
+}
+.dash-card {
+  background: var(--white);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-top: 3px solid var(--border);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: box-shadow 0.15s, transform 0.12s;
+}
+.dash-card:hover { box-shadow: 0 4px 20px rgba(13,27,75,0.13); transform: translateY(-1px); }
+.dash-card.active-filter { outline: 2px solid currentColor; outline-offset: 2px; }
+.dash-card.dc-critical { border-top-color: var(--critical); }
+.dash-card.dc-serious  { border-top-color: var(--serious); }
+.dash-card.dc-moderate { border-top-color: #d4a017; }
+.dash-card.dc-minor    { border-top-color: var(--minor); }
+.dash-num {
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--navy);
+}
+.dash-label { font-size: 11.5px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.dash-bar-wrap { height: 4px; background: var(--bg); border-radius: 2px; margin-top: 6px; overflow: hidden; }
+.dash-bar { height: 100%; border-radius: 2px; }
+.dash-card.dc-critical .dash-bar { background: var(--critical); }
+.dash-card.dc-serious  .dash-bar { background: var(--serious); }
+.dash-card.dc-moderate .dash-bar { background: #d4a017; }
+.dash-card.dc-minor    .dash-bar { background: var(--minor); }
+
+/* Cat header */
+.cat-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--border);
+}
+.cat-icon  { font-size: 20px; line-height: 1; }
+.cat-title { font-size: 18px; font-weight: 700; color: var(--navy); line-height: 1; }
+.cat-meta  { font-size: 12px; color: var(--muted); margin-left: auto; white-space: nowrap; }
+.cat-actions { display: flex; gap: 6px; }
+.cat-action-btn {
+  font-size: 11px;
+  color: var(--blue);
+  background: var(--blue-lt);
+  border: none;
+  border-radius: 5px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background 0.12s;
+}
+.cat-action-btn:hover { background: #d4e8ff; }
+
+/* ── Issue card ── */
+.issue-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 8px;
+  overflow: hidden;
+  transition: box-shadow 0.15s;
+  box-shadow: var(--shadow);
+}
+.issue-card:hover { box-shadow: 0 2px 18px rgba(13,27,75,0.09); }
+.issue-card[data-impact="critical"] { border-left-color: var(--critical); }
+.issue-card[data-impact="serious"]  { border-left-color: var(--serious); }
+.issue-card[data-impact="moderate"] { border-left-color: #d4a017; }
+.issue-card[data-impact="minor"]    { border-left-color: var(--minor); }
+
+/* Card summary */
+.card-summary {
+  padding: 13px 16px 11px;
+  cursor: pointer;
+  user-select: none;
+}
+.card-summary:hover { background: #fafbff; }
+
+.card-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+.impact-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: #fff;
+  flex-shrink: 0;
+}
+.ib-critical { background: var(--critical); }
+.ib-serious  { background: var(--serious); }
+.ib-moderate { background: #d4a017; color: #222; }
+.ib-minor    { background: var(--minor); }
+
+.card-wcag {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--blue);
+  background: var(--blue-lt);
+  padding: 2px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.card-rule {
+  font-size: 10px;
+  color: var(--muted);
+  background: #f0f4ff;
+  border: 1px solid #dde6ff;
+  padding: 1px 7px;
+  border-radius: 4px;
+  white-space: nowrap;
+  font-family: monospace;
+}
+.card-count-pill {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.chevron {
+  font-size: 10px;
+  color: #b0bdd8;
+  transition: transform 0.22s ease;
+  flex-shrink: 0;
+}
+.issue-card.open .chevron { transform: rotate(180deg); }
+
+.card-title-row {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.45;
+  margin-bottom: 6px;
+}
+
+/* Preview selectors in collapsed state */
+.card-preview {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+.preview-pill {
+  font-family: "Consolas", monospace;
+  font-size: 10.5px;
+  background: #f2f5fc;
+  border: 1px solid #dce5f5;
+  color: #3a4a70;
+  padding: 2px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.preview-more {
+  font-size: 10.5px;
+  color: var(--muted);
+  padding: 2px 4px;
+  align-self: center;
+}
+
+/* Card body */
+.card-body {
+  display: none;
+  border-top: 1px solid var(--border);
+  grid-template-columns: 1fr 1fr;
+}
+.issue-card.open .card-body { display: grid; }
+
+.card-panel { padding: 18px 20px; }
+.card-panel + .card-panel { border-left: 1px solid var(--border); }
+.panel-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #8899bb;
+  margin-bottom: 10px;
+}
+
+/* Fix text */
+.fix-body { font-size: 13px; color: var(--text); line-height: 1.65; }
+.fix-body p  { margin-bottom: 8px; }
+.fix-body p:last-child { margin-bottom: 0; }
+.fix-body code {
+  background: #eef2ff;
+  color: #1a3fa0;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-family: "Consolas", monospace;
+  word-break: break-all;
+}
+.fix-body pre {
+  background: #1a2035;
+  color: #c8d8f8;
+  padding: 12px 14px;
+  border-radius: 7px;
+  font-size: 11.5px;
+  font-family: "Consolas", monospace;
+  white-space: pre-wrap;
+  word-break: break-all;
+  margin: 8px 0;
+  line-height: 1.6;
+}
+
+.low-conf {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  background: #fffbeb;
+  border: 1px solid #f0c040;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: #7a5500;
+  margin-top: 10px;
+  line-height: 1.5;
+}
+
+.card-footer {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.citations-text { font-size: 11px; color: var(--muted); flex: 1; }
+.axe-link {
+  font-size: 11px;
+  color: var(--blue);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.axe-link:hover { text-decoration: underline; }
+
+/* Affected elements */
+.screenshot {
+  max-width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 4px;
+  display: block;
+  cursor: zoom-in;
+  transition: box-shadow 0.15s;
+}
+.screenshot:hover { box-shadow: 0 4px 20px rgba(13,27,75,0.15); }
+.screenshot-label {
+  font-size: 10px;
+  color: var(--muted);
+  margin-bottom: 12px;
+  font-style: italic;
+}
+
+.el-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.el-item {
+  font-size: 12.5px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 6px 8px;
+  margin: -6px -8px;
+  transition: background 0.15s, border-color 0.15s, opacity 0.2s;
+}
+.el-item.el-resolved-fixed   { background: #f0fdf4; border-color: #bbf7d0; opacity: 0.6; }
+.el-item.el-resolved-wontfix { background: #f9fafb; border-color: #e5e7eb; opacity: 0.5; }
+.el-item.el-resolved-fixed .el-label   { text-decoration: line-through; color: var(--muted); }
+.el-item.el-resolved-wontfix .el-label { text-decoration: line-through; color: var(--muted); }
+
+.el-status-row {
+  display: flex;
+  gap: 5px;
+  margin-top: 5px;
+  align-items: center;
+}
+.el-status-btn {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 9px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--white);
+  color: var(--muted);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.12s;
+  white-space: nowrap;
+}
+.el-status-btn:hover { border-color: #b0c8f0; }
+.el-status-btn.el-fixed   { background: #ecfdf5; color: #15803d; border-color: #86efac; }
+.el-status-btn.el-wontfix { background: #f5f5f5; color: #6b7280; border-color: #d1d5db; }
+.el-resolved-label {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 10px;
+  margin-left: 2px;
+}
+.el-resolved-label.rb-fixed   { background: #ecfdf5; color: #15803d; border: 1px solid #86efac; }
+.el-resolved-label.rb-wontfix { background: #f5f5f5; color: #6b7280; border: 1px solid #d1d5db; }
+
+.el-label { font-weight: 600; color: var(--text); margin-bottom: 2px; font-size: 12px; }
+.el-selector-inline {
+  font-family: "Consolas", monospace;
+  font-size: 9.5px;
+  color: #8899bb;
+  margin-bottom: 5px;
+  word-break: break-all;
+  line-height: 1.4;
+}
+.el-html-hidden {
+  font-family: "Consolas", monospace;
+  font-size: 11px;
+  background: #f4f7ff;
+  border: 1px solid #dce6ff;
+  border-radius: 5px;
+  padding: 6px 10px;
+  color: #2a3a70;
+  word-break: break-all;
+  cursor: pointer;
+  transition: background 0.1s;
+  margin-top: 4px;
+}
+.el-html-hidden:hover { background: #e4eeff; }
+.copy-hint { font-size: 9.5px; color: #a0b0cc; margin-top: 2px; }
+
+.vision-fix {
+  font-size: 11.5px;
+  background: #f0f7ff;
+  border: 1px solid #bdd9ff;
+  border-radius: 5px;
+  padding: 6px 10px;
+  margin-top: 5px;
+  color: #1a3a70;
+  line-height: 1.55;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+}
+.vision-fix code {
+  background: #ddeeff;
+  color: #1a3fa0;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-family: "Consolas", monospace;
+  word-break: break-all;
+  white-space: normal;
+}
+
+.el-actions { display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
+.el-btn {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--white);
+  color: var(--muted);
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.1s, color 0.1s;
+  white-space: nowrap;
+}
+.el-btn:hover { background: var(--blue-lt); color: var(--blue); border-color: #b0c8f0; }
+
+/* ── Status buttons ── */
+.status-bar {
+  display: flex;
+  gap: 6px;
+  padding: 8px 16px 10px;
+  border-top: 1px solid var(--border);
+  background: #fafbff;
+}
+.status-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--white);
+  color: var(--muted);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.14s;
+}
+.status-btn:hover { border-color: #b0c8f0; }
+.status-btn.fixed { background: #ecfdf5; color: #15803d; border-color: #86efac; }
+.status-btn.wontfix { background: #f5f5f5; color: #6b7280; border-color: #d1d5db; }
+
+/* Resolved card styling */
+.issue-card.resolved-fixed {
+  opacity: 0.55;
+  border-left-color: #86efac !important;
+}
+.issue-card.resolved-wontfix {
+  opacity: 0.45;
+  border-left-color: #d1d5db !important;
+}
+.issue-card.resolved-fixed .card-title-row,
+.issue-card.resolved-wontfix .card-title-row {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+.resolved-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.rb-fixed    { background: #ecfdf5; color: #15803d; border: 1px solid #86efac; }
+.rb-wontfix  { background: #f5f5f5; color: #6b7280; border: 1px solid #d1d5db; }
+
+/* Progress bar in sidebar */
+.sb-progress {
+  padding: 10px 18px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.sb-progress-label {
+  font-size: 9.5px;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  color: #4a6080;
+  margin-bottom: 6px;
+}
+.progress-track {
+  height: 6px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+.progress-fill-fixed   { height: 100%; background: #22c55e; border-radius: 3px; transition: width 0.35s ease; float: left; }
+.progress-fill-wontfix { height: 100%; background: #9ca3af; border-radius: 3px; transition: width 0.35s ease; float: left; }
+.progress-text { font-size: 10px; color: #6a90d8; }
+.el-selector {
+  font-family: "Consolas", monospace;
+  font-size: 10px;
+  color: #5a6a8a;
+  background: #f4f7ff;
+  border: 1px solid #e0e8ff;
+  border-radius: 4px;
+  padding: 3px 8px;
+  margin-top: 4px;
+  word-break: break-all;
+  display: none;
+}
+.el-selector.visible { display: block; }
+
+.show-more-btn {
+  margin-top: 6px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 11px;
+  color: var(--blue);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.show-more-btn:hover { background: var(--blue-lt); border-color: #b0c8f0; }
+
+/* No-results */
+.no-results {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--muted);
+}
+.no-results .icon { font-size: 32px; margin-bottom: 10px; }
+.no-results strong { color: var(--navy); display: block; margin-bottom: 4px; }
+
+/* Empty (no issues at all) */
+.all-clear {
+  text-align: center;
+  padding: 72px 24px;
+}
+.all-clear .icon { font-size: 48px; margin-bottom: 14px; }
+.all-clear h2 { font-size: 20px; color: var(--navy); margin-bottom: 8px; }
+.all-clear p  { font-size: 13px; color: var(--muted); max-width: 400px; margin: 0 auto; }
+
+/* Search highlight */
+mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
+
+/* Disclaimer */
+.disclaimer {
+  background: var(--white);
+  border-top: 1px solid var(--border);
+  padding: 12px 28px;
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #1a2035;
+  color: #fff;
+  padding: 9px 16px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(6px);
+  transition: opacity 0.18s, transform 0.18s;
+  z-index: 999;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+
+/* Search no results */
+.search-empty {
+  display: none;
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--muted);
+}
+.search-empty .icon { font-size: 32px; margin-bottom: 10px; }
+
+/* ── Print / PDF ── */
+@media print {
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+
+  .sidebar, .topbar, .disclaimer, .toast,
+  .status-bar, .el-actions, .el-selector,
+  .el-html-hidden, .show-more-btn,
+  .cat-actions, .print-btn { display: none !important; }
+
+  body { background: #fff; font-size: 12px; }
+  .layout { display: block; }
+  .main { display: block; }
+  .content { padding: 0; max-width: 100%; }
+
+  /* Visa alla kategorier och kort */
+  .cat-view { display: block !important; page-break-inside: avoid; margin-bottom: 20px; }
+  .issue-card { display: block !important; page-break-inside: avoid; margin-bottom: 10px; box-shadow: none; }
+
+  /* Öppna alla kort */
+  .card-body { display: grid !important; grid-template-columns: 1fr 1fr; border-top: 1px solid #ddd; }
+
+  /* Dölj element-extra */
+  .el-extra { display: list-item !important; }
+
+  /* Print-header */
+  .print-header {
+    display: block !important;
+    padding: 20px 0 16px;
+    border-bottom: 3px solid #0d1b4b;
+    margin-bottom: 20px;
+  }
+  .print-header h1 { font-size: 20px; color: #0d1b4b; margin-bottom: 4px; }
+  .print-header .print-meta { font-size: 11px; color: #666; margin-bottom: 12px; }
+  .print-summary-row {
+    display: flex !important;
+    gap: 16px;
+    margin-bottom: 4px;
+  }
+  .print-summary-chip {
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .psc-critical  { background: #fdf0ef; color: #c0392b; border: 1px solid #c0392b; }
+  .psc-serious   { background: #fff4ed; color: #e05a00; border: 1px solid #e05a00; }
+  .psc-moderate  { background: #fffbeb; color: #b8860b; border: 1px solid #b8860b; }
+  .psc-minor     { background: #f4f6f8; color: #5a6a7a; border: 1px solid #5a6a7a; }
+  .psc-done      { background: #ecfdf5; color: #15803d; border: 1px solid #86efac; }
+  .psc-wontfix   { background: #f5f5f5; color: #6b7280; border: 1px solid #d1d5db; }
+
+  /* Status i print */
+  .print-status-badge {
+    display: inline-block !important;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-left: 8px;
+  }
+  .psb-fixed   { background: #ecfdf5; color: #15803d; }
+  .psb-wontfix { background: #f5f5f5; color: #6b7280; }
+  .psb-open    { background: #fdf0ef; color: #c0392b; }
+
+  /* resolved-kort i print */
+  .issue-card.resolved-fixed   { border-left-color: #86efac !important; opacity: 1 !important; }
+  .issue-card.resolved-wontfix { border-left-color: #d1d5db !important; opacity: 1 !important; }
+  .issue-card.resolved-fixed .card-title-row,
+  .issue-card.resolved-wontfix .card-title-row { text-decoration: none !important; color: var(--text) !important; }
+
+  /* Dashboard göms, ersätts av print-header */
+  #dashboard { display: none !important; }
+  .search-empty { display: none !important; }
+
+  a { color: inherit; text-decoration: none; }
+}
+
+/* Print-header syns bara vid utskrift */
+.print-header { display: none; }
+.print-status-badge { display: none; }
 </style>
 </head>
 <body>
+<div class="layout">
 
-<h1>Tillgänglighetsrapport</h1>
-<p><strong>Granskad sida:</strong> {{ url }}</p>
-<p><strong>Datum:</strong> {{ scan_date }}</p>
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="sb-header">
+      <div class="sb-eyebrow">Tillgänglighetsrapport · WCAG 2.2</div>
+      <div class="sb-title">Granskningsresultat</div>
+      <div class="sb-url">{{ url }}</div>
+      <div class="sb-date">{{ scan_date }}</div>
+    </div>
 
-<div class="summary">
-<h2>Sammanfattning</h2>
-<p>Granskningen hittade <strong>{{ total_issues }}</strong> problem i <strong>{{ groups|length }}</strong> kategorier.</p>
-<ul>
-  <li>Kritiska: {{ count_by_impact.critical }}</li>
-  <li>Allvarliga: {{ count_by_impact.serious }}</li>
-  <li>Måttliga: {{ count_by_impact.moderate }}</li>
-  <li>Mindre: {{ count_by_impact.minor }}</li>
-</ul>
-</div>
+    {% set total = count_by_impact.critical + count_by_impact.serious + count_by_impact.moderate + count_by_impact.minor %}
+    <div class="sb-summary">
+      <div class="sb-summary-title">Totalt {{ total }} problem</div>
+      {% for sev, label, cls in [
+          (count_by_impact.critical, 'Kritiska',   'critical'),
+          (count_by_impact.serious,  'Allvarliga',  'serious'),
+          (count_by_impact.moderate, 'Måttliga',    'moderate'),
+          (count_by_impact.minor,    'Mindre',      'minor')
+      ] %}
+      <div class="sev-row">
+        <span class="sev-dot d-{{ cls }}"></span>
+        <span class="sev-label">{{ label }}</span>
+        <span class="sev-num" id="sev-num-{{ cls }}">{{ sev }}</span>
+        <div class="sev-bar-wrap">
+          <div class="sev-bar d-{{ cls }}" id="sev-bar-{{ cls }}"
+               style="width: {{ ((sev / total * 100) | int) if total > 0 else 0 }}%"></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
 
-<h2>Hittade problem</h2>
+    <div class="sb-progress" id="sb-progress">
+      <div class="sb-progress-label">Hanteringsframsteg</div>
+      <div class="progress-track" id="progress-track">
+        <div class="progress-fill-fixed"   id="progress-fixed"   style="width:0%"></div>
+        <div class="progress-fill-wontfix" id="progress-wontfix" style="width:0%"></div>
+      </div>
+      <div class="progress-text" id="progress-text">0 av {{ total_issues }} hanterade</div>
+    </div>
 
-{% for group in groups %}
-<div class="issue {{ group.impact }}">
-  <p>
-    <span class="badge {{ group.impact }}">{{ group.impact|upper }}</span>
-    <strong>{{ group.wcag_reference }}</strong> — <code>{{ group.rule_id }}</code>
-    <span class="count">({{ group.count }} träff{{ "ar" if group.count > 1 else "" }})</span>
-  </p>
+    <nav class="sb-nav">
+      <div class="sb-nav-label">Kategorier</div>
+      {% for cat in digg_groups %}
+      {% set ct = namespace(c=0, s=0, m=0, i=0) %}
+      {% for iss in cat.issues %}
+        {% if iss.impact == 'critical' %}{% set ct.c = ct.c + 1 %}
+        {% elif iss.impact == 'serious' %}{% set ct.s = ct.s + 1 %}
+        {% elif iss.impact == 'moderate' %}{% set ct.m = ct.m + 1 %}
+        {% else %}{% set ct.i = ct.i + 1 %}{% endif %}
+      {% endfor %}
+      {% set cat_total = ct.c + ct.s + ct.m + ct.i %}
+      <div class="nav-item{% if loop.first %} active{% endif %}"
+           onclick="showCat({{ loop.index0 }}, this)"
+           data-cat="{{ loop.index0 }}"
+           data-count-all="{{ cat_total }}"
+           data-count-critical="{{ ct.c }}"
+           data-count-serious="{{ ct.s }}"
+           data-count-moderate="{{ ct.m }}"
+           data-count-minor="{{ ct.i }}"
+           data-worst="{{ cat.worst_impact }}">
+        <span class="nav-icon">{{ cat.icon }}</span>
+        <div class="nav-body">
+          <div class="nav-name">{{ cat.category }}</div>
+          <div class="nav-mini-bars">
+            {% if ct.c > 0 %}<div class="nmb d-critical" style="width:{{ [(ct.c / cat_total * 60)|int, 4]|max }}px"></div>{% endif %}
+            {% if ct.s > 0 %}<div class="nmb d-serious"  style="width:{{ [(ct.s / cat_total * 60)|int, 4]|max }}px"></div>{% endif %}
+            {% if ct.m > 0 %}<div class="nmb d-moderate" style="width:{{ [(ct.m / cat_total * 60)|int, 4]|max }}px"></div>{% endif %}
+            {% if ct.i > 0 %}<div class="nmb d-minor"    style="width:{{ [(ct.i / cat_total * 60)|int, 4]|max }}px"></div>{% endif %}
+          </div>
+        </div>
+        <span class="nav-badge nb-{{ cat.worst_impact }}">{{ cat_total }}</span>
+      </div>
+      {% endfor %}
+    </nav>
+  </aside>
 
-  <p><strong>Problem:</strong> {{ group.plain_swedish }}</p>
+  <!-- ── Main ── -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="topbar-title">
+        {% if digg_groups %}{{ digg_groups[0].icon }} {{ digg_groups[0].category }}{% endif %}
+      </div>
 
-  <p><strong>Åtgärd:</strong> {{ group.suggested_fix }}</p>
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="search-input" placeholder="Sök problem, regel, WCAG…" oninput="onSearch(this.value)">
+      </div>
 
-  {% if group.citations %}
-  <p class="citations"><strong>Källor:</strong>
-    {% for citation in group.citations %}{{ citation.reference }}{% if not loop.last %}, {% endif %}{% endfor %}
-  </p>
-  {% endif %}
+      <span class="topbar-count" id="topbar-count"></span>
 
-  {% if group.confidence == "low" %}
-  <p style="background: #fff3cd; padding: 4px 8px; border-radius: 3px; font-size: 11px;">⚠️ Osäkert förslag – granska manuellt.</p>
-  {% endif %}
+      <div class="filter-row">
+        <button class="fbtn on"  onclick="setFilter('all',      this)">Alla</button>
+        <button class="fbtn fc"  onclick="setFilter('critical', this)">Kritiska</button>
+        <button class="fbtn fs"  onclick="setFilter('serious',  this)">Allvarliga</button>
+        <button class="fbtn fm"  onclick="setFilter('moderate', this)">Måttliga</button>
+        <button class="fbtn fi"  onclick="setFilter('minor',    this)">Mindre</button>
+        <button class="fbtn" id="btn-resolved" onclick="toggleResolved(this)" title="Visa/dölj hanterade problem" style="margin-left:4px">Visa hanterade</button>
+        <button class="fbtn print-btn" onclick="printReport()" title="Skapa PDF-rapport" style="margin-left:8px;background:#1a4db5;color:#fff;border-color:#1a4db5">📄 Skapa rapport</button>
+      </div>
+    </div>
 
-  {% if group.count <= 3 %}
-  <div class="affected">
-    <strong>Berörda element:</strong>
-    <ul>
-    {% for sel in group.selectors %}
-      <li><code>{{ sel.selector|truncate(120) }}</code></li>
-    {% endfor %}
-    </ul>
+    <div class="content" id="content">
+
+      <!-- Print header (dold i normalläge, visas vid utskrift) -->
+      <div class="print-header">
+        <h1>Tillgänglighetsrapport — {{ url }}</h1>
+        <div class="print-meta">Granskad: {{ scan_date }} &nbsp;·&nbsp; Genererad av Tillgänglighetsrevisor (axe-core + AI)</div>
+        <div class="print-summary-row" id="print-summary-row"></div>
+      </div>
+
+      <!-- Dashboard -->
+      {% set total = count_by_impact.critical + count_by_impact.serious + count_by_impact.moderate + count_by_impact.minor %}
+      {% if total > 0 %}
+      <div class="dashboard" id="dashboard">
+        {% for sev, label, cls in [
+            (count_by_impact.critical, 'Kritiska',  'critical'),
+            (count_by_impact.serious,  'Allvarliga', 'serious'),
+            (count_by_impact.moderate, 'Måttliga',  'moderate'),
+            (count_by_impact.minor,    'Mindre',    'minor')
+        ] %}
+        <div class="dash-card dc-{{ cls }}" onclick="dashFilter('{{ cls }}', this)" title="Filtrera på {{ label | lower }}"
+             data-impact="{{ cls }}" data-total="{{ sev }}">
+          <div class="dash-num" id="dash-num-{{ cls }}" data-orig="{{ sev }}">{{ sev }}</div>
+          <div class="dash-label">{{ label }}</div>
+          <div class="dash-bar-wrap">
+            <div class="dash-bar" id="dash-bar-{{ cls }}" style="width:{{ ((sev / total * 100)|int) if total > 0 else 0 }}%"></div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- Search empty state -->
+      <div class="search-empty" id="search-empty">
+        <div class="icon">🔍</div>
+        <strong>Inga träffar för "<span id="search-term-display"></span>"</strong>
+        <p>Prova ett annat sökord eller rensa sökningen.</p>
+      </div>
+
+      {% for cat in digg_groups %}
+      <div class="cat-view" id="cat-{{ loop.index0 }}"
+           style="{{ '' if loop.first else 'display:none' }}">
+
+        <div class="cat-header">
+          <span class="cat-icon">{{ cat.icon }}</span>
+          <span class="cat-title">{{ cat.category }}</span>
+          <span class="cat-meta">{{ cat.issues|length }} problem</span>
+          <div class="cat-actions">
+            <button class="cat-action-btn" onclick="expandAll({{ loop.index0 }})">Expandera alla</button>
+            <button class="cat-action-btn" onclick="collapseAll({{ loop.index0 }})">Kollapsa alla</button>
+          </div>
+        </div>
+
+        {% for issue in cat.issues %}
+        <div class="issue-card" data-impact="{{ issue.impact }}"
+             data-rule="{{ issue.rule_id }}"
+             data-search="{{ (issue.plain_swedish ~ ' ' ~ issue.rule_id ~ ' ' ~ (issue.wcag_reference or '') ~ ' ' ~ issue.selectors|map(attribute='label')|join(' ')) | lower | striptags }}">
+
+          <div class="card-summary" onclick="toggleCard(this.parentElement)">
+            <div class="card-meta-row">
+              <span class="impact-badge ib-{{ issue.impact }}">{{ issue.impact }}</span>
+              {% if issue.wcag_reference %}
+              <span class="card-wcag">{{ issue.wcag_reference }}</span>
+              {% endif %}
+              <span class="card-rule">{{ issue.rule_id }}</span>
+              <span class="card-count-pill">
+                {{ issue.count }} träff{{ "ar" if issue.count > 1 else "" }}
+                <span class="resolved-badge" style="display:none"></span>
+                <span class="chevron">▼</span>
+              </span>
+            </div>
+            <div class="card-title-row">{{ issue.plain_swedish | striptags }}</div>
+            {% if issue.selectors %}
+            <div class="card-preview">
+              {% for sel in issue.selectors[:2] %}
+              <span class="preview-pill">{{ sel.label }}</span>
+              {% endfor %}
+              {% if issue.selectors|length > 2 %}
+              <span class="preview-more">+{{ issue.selectors|length - 2 }} till</span>
+              {% endif %}
+            </div>
+            {% endif %}
+          </div>
+
+          <div class="status-bar">
+            <button class="status-btn" onclick="setStatus(this, 'fixed')"   title="Markera som åtgärdad">✅ Åtgärdad</button>
+            <button class="status-btn" onclick="setStatus(this, 'wontfix')" title="Markera som ej relevant">🚫 Ej relevant</button>
+          </div>
+
+          <div class="card-body">
+            <!-- Left: fix -->
+            <div class="card-panel">
+              <div class="panel-label">Problem &amp; åtgärd</div>
+              <div class="fix-body">{{ issue.suggested_fix | safe }}</div>
+
+              {% if issue.confidence == "low" %}
+              <div class="low-conf">⚠️ Osäkert AI-förslag — verifiera manuellt innan åtgärd.</div>
+              {% endif %}
+
+              <div class="card-footer">
+                {% if issue.citations %}
+                <span class="citations-text">
+                  <strong>Källor:</strong>
+                  {% for c in issue.citations %}{{ c.reference }}{% if not loop.last %} · {% endif %}{% endfor %}
+                </span>
+                {% endif %}
+                <a class="axe-link" href="{{ issue.help_url }}" target="_blank" rel="noopener">
+                  Mer info hos axe-core →
+                </a>
+              </div>
+            </div>
+
+            <!-- Right: elements -->
+            <div class="card-panel">
+              <div class="panel-label">Berörda element ({{ issue.count }} st)</div>
+
+              {% if issue.screenshot_b64 and issue.count <= 5 %}
+              <img class="screenshot"
+                   src="data:image/png;base64,{{ issue.screenshot_b64 }}"
+                   alt="Skärmdump av första träffade elementet">
+              <div class="screenshot-label">Skärmdump: första träffen</div>
+              {% endif %}
+
+              <ul class="el-list">
+                {% for sel in issue.selectors %}
+                {% set el_key = issue.rule_id ~ '::' ~ loop.index %}
+                <li class="el-item{% if loop.index > 5 %} el-extra{% endif %}"
+                    data-el-key="{{ el_key }}"
+                    {% if loop.index > 5 %}style="display:none"{% endif %}>
+                  <div class="el-label">{{ sel.label }}</div>
+                  {% if sel.selector %}
+                  <div class="el-selector-inline">{{ sel.selector | e }}</div>
+                  {% endif %}
+                  {% if sel.vision_fix %}
+                  <div class="vision-fix">🤖 <strong>AI-bedömning:</strong> {{ sel.vision_fix | safe }}</div>
+                  {% endif %}
+                  {% if sel.selector %}
+                  <div class="el-actions" data-selector="{{ sel.selector | e }}"
+                       data-html="{{ sel.html | replace('"', '&quot;') | replace("'","&#39;") | replace("\\","\\\\") }}">
+                    <button class="el-btn" onclick="copySel(this)">Kopiera selektor</button>
+                    <button class="el-btn" onclick="copyConsole(this)">Kopiera konsolkommando</button>
+                    <button class="el-btn" onclick="toggleHtml(this)">Visa HTML</button>
+                    <button class="el-btn" onclick="toggleSelector(this)">Visa selektor</button>
+                  </div>
+                  <div class="el-html-hidden" style="display:none"
+                       onclick="copyElFromHidden(this)"
+                       title="Klicka för att kopiera HTML"></div>
+                  <div class="el-selector">{{ sel.selector | e }}</div>
+                  {% endif %}
+                  <div class="el-status-row">
+                    <button class="el-status-btn" onclick="setElStatus(this, 'fixed')"   title="Markera detta element som åtgärdat">✅ Åtgärdad</button>
+                    <button class="el-status-btn" onclick="setElStatus(this, 'wontfix')" title="Markera detta element som ej relevant">🚫 Ej relevant</button>
+                    <span class="el-resolved-label" style="display:none"></span>
+                  </div>
+                </li>
+                {% endfor %}
+              </ul>
+
+              {% if issue.selectors|length > 5 %}
+              <button class="show-more-btn"
+                      onclick="toggleExtra(this)"
+                      data-total="{{ issue.selectors|length }}">
+                Visa alla {{ issue.selectors|length }} element ▼
+              </button>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+
+        <div class="no-results" id="no-results-{{ loop.index0 }}" style="display:none">
+          <div class="icon">🔍</div>
+          <strong>Inga problem matchar det valda filtret.</strong>
+          <p>Prova ett annat filter eller välj "Alla".</p>
+        </div>
+      </div>
+      {% endfor %}
+
+      {% if not digg_groups %}
+      <div class="all-clear">
+        <div class="icon">✅</div>
+        <h2>Inga automatiskt detekterade problem!</h2>
+        <p>Automatisk granskning täcker ca 30–40 % av WCAG-brott. Manuell granskning rekommenderas alltid som komplement.</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="disclaimer">
+      Problem identifierade av <strong>axe-core</strong>. Förklaringar genererade av AI baserat på officiell WCAG 2.2- och EAA-text via RAG.
+      Automatisk granskning täcker ca 30–40 % av WCAG-brott — manuell granskning rekommenderas alltid som komplement.
+    </div>
   </div>
-  {% else %}
-  <div class="affected">
-    <strong>Berörda element ({{ group.count }} st):</strong>
-    <ul>
-    {% for sel in group.selectors[:3] %}
-      <li><code>{{ sel.selector|truncate(120) }}</code></li>
-    {% endfor %}
-      <li>… och {{ group.count - 3 }} till</li>
-    </ul>
-  </div>
-  {% endif %}
-
-  <p style="font-size: 10px"><a href="{{ group.help_url }}">Mer info hos axe-core</a></p>
-</div>
-{% endfor %}
-
-<div class="disclaimer">
-<p><strong>Om denna rapport:</strong> Problem identifierade av axe-core. Förklaringar genererade av GPT-4o baserat på officiell WCAG 2.2- och EAA-text via RAG. Automatisk granskning täcker ca 30–40 % av WCAG-brott. Manuell granskning rekommenderas som komplement.</p>
 </div>
 
+<div class="toast" id="toast"></div>
+
+<script>
+let currentFilter = 'all';
+let currentCatIdx = 0;
+let currentSearch = '';
+let showResolved = false;
+
+// ── localStorage keys ──
+const _URL_KEY     = '{{ url | replace("https://","") | replace("http://","") }}';
+const STORAGE_KEY  = 'a11y_status_'    + _URL_KEY;   // per issue-card (rule_id)
+const EL_STORE_KEY = 'a11y_el_status_' + _URL_KEY;   // per element
+
+function loadStatuses() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
+  catch { return {}; }
+}
+function saveStatuses(s) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch {}
+}
+function loadElStatuses() {
+  try { return JSON.parse(localStorage.getItem(EL_STORE_KEY) || '{}'); }
+  catch { return {}; }
+}
+function saveElStatuses(s) {
+  try { localStorage.setItem(EL_STORE_KEY, JSON.stringify(s)); } catch {}
+}
+
+// ── Status per issue card ──
+function setStatus(btn, newStatus) {
+  const card   = btn.closest('.issue-card');
+  const ruleId = card.dataset.rule;
+  const statuses = loadStatuses();
+  const current  = statuses[ruleId];
+
+  // Toggle off if already set
+  if (current === newStatus) {
+    delete statuses[ruleId];
+    applyCardStatus(card, null);
+  } else {
+    statuses[ruleId] = newStatus;
+    applyCardStatus(card, newStatus);
+  }
+  saveStatuses(statuses);
+  updateProgress();
+  updateDashboardCounts();
+  applyResolvedVisibility();
+}
+
+function applyCardStatus(card, status) {
+  card.classList.remove('resolved-fixed', 'resolved-wontfix');
+  const badge = card.querySelector('.resolved-badge');
+  const btns  = card.querySelectorAll('.status-btn');
+
+  btns.forEach(b => b.classList.remove('fixed', 'wontfix'));
+
+  if (status === 'fixed') {
+    card.classList.add('resolved-fixed');
+    badge.style.display = '';
+    badge.className = 'resolved-badge rb-fixed';
+    badge.textContent = '✅ Åtgärdad';
+    card.querySelector('.status-btn:first-child').classList.add('fixed');
+  } else if (status === 'wontfix') {
+    card.classList.add('resolved-wontfix');
+    badge.style.display = '';
+    badge.className = 'resolved-badge rb-wontfix';
+    badge.textContent = '🚫 Ej relevant';
+    card.querySelector('.status-btn:last-child').classList.add('wontfix');
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function applyResolvedVisibility() {
+  document.querySelectorAll('.issue-card').forEach(card => {
+    const isResolved = card.classList.contains('resolved-fixed') || card.classList.contains('resolved-wontfix');
+    if (!showResolved && isResolved) {
+      card.dataset.hiddenByStatus = '1';
+    } else {
+      delete card.dataset.hiddenByStatus;
+    }
+  });
+  applyFilterAndSearch(currentCatIdx);
+}
+
+function toggleResolved(btn) {
+  showResolved = !showResolved;
+  btn.classList.toggle('on', showResolved);
+  btn.textContent = showResolved ? 'Dölj hanterade' : 'Visa hanterade';
+  applyResolvedVisibility();
+}
+
+function updateProgress() {
+  // Räkna unika element (per el-key) + kort som helhet är markerade
+  const cardSt = loadStatuses();
+  const elSt   = loadElStatuses();
+
+  const totalEl = document.querySelectorAll('.el-item[data-el-key]').length;
+  const totalCards = document.querySelectorAll('.issue-card').length;
+
+  // En "hanterad enhet" = antingen ett element eller ett helt kort
+  const fixedEl    = document.querySelectorAll('.el-item.el-resolved-fixed').length;
+  const wontfixEl  = document.querySelectorAll('.el-item.el-resolved-wontfix').length;
+  const fixedCards = Object.values(cardSt).filter(v => v === 'fixed').length;
+  const wontCards  = Object.values(cardSt).filter(v => v === 'wontfix').length;
+
+  // Progressbar baseras på element om det finns element, annars kort
+  const total   = totalEl > 0 ? totalEl : totalCards;
+  const fixed   = totalEl > 0 ? fixedEl   : fixedCards;
+  const wontfix = totalEl > 0 ? wontfixEl : wontCards;
+  const handled = fixed + wontfix;
+
+  const pctFixed   = total ? (fixed   / total * 100) : 0;
+  const pctWontfix = total ? (wontfix / total * 100) : 0;
+
+  const pf = document.getElementById('progress-fixed');
+  const pw = document.getElementById('progress-wontfix');
+  const pt = document.getElementById('progress-text');
+  if (pf) pf.style.width = pctFixed + '%';
+  if (pw) pw.style.width = pctWontfix + '%';
+  if (pt) pt.textContent = `${handled} av ${total} element hanterade`;
+}
+
+// ── Dashboard & sidebar count update ──
+function updateDashboardCounts() {
+  const impacts = ['critical', 'serious', 'moderate', 'minor'];
+  const grandTotal = impacts.reduce((s, imp) => {
+    const el = document.getElementById('dash-num-' + imp);
+    return s + (el ? parseInt(el.dataset.orig || el.textContent, 10) : 0);
+  }, 0);
+
+  impacts.forEach(imp => {
+    const numEl  = document.getElementById('dash-num-' + imp);
+    const barEl  = document.getElementById('dash-bar-' + imp);
+    const sevEl  = document.getElementById('sev-num-' + imp);
+    const sevBar = document.getElementById('sev-bar-' + imp);
+    if (!numEl) return;
+
+    // Spara originaltalet första gången
+    if (!numEl.dataset.orig) numEl.dataset.orig = numEl.textContent.replace(/\D.*/, '').trim();
+    const orig = parseInt(numEl.dataset.orig, 10);
+
+    // Räkna hur många kort med detta impact är resolved (kort-nivå)
+    const resolvedCards = document.querySelectorAll(
+      `.issue-card[data-impact="${imp}"].resolved-fixed, .issue-card[data-impact="${imp}"].resolved-wontfix`
+    ).length;
+
+    // Räkna hur många individuella element med detta impact är resolved
+    // (via kort som inte är helmarkerade)
+    const resolvedEls = document.querySelectorAll(
+      `.issue-card[data-impact="${imp}"]:not(.resolved-fixed):not(.resolved-wontfix) .el-item.el-resolved-fixed,
+       .issue-card[data-impact="${imp}"]:not(.resolved-fixed):not(.resolved-wontfix) .el-item.el-resolved-wontfix`
+    ).length;
+
+    const totalCards = document.querySelectorAll(`.issue-card[data-impact="${imp}"]`).length;
+    const resolvedTotal = resolvedCards + resolvedEls;
+    const remaining = Math.max(0, orig - resolvedTotal);
+
+    // Uppdatera dashboard-kort
+    if (resolvedTotal > 0) {
+      numEl.innerHTML = `${remaining}<span style="font-size:14px;font-weight:500;color:var(--muted)"> / ${orig}</span>`;
+    } else {
+      numEl.textContent = orig;
+    }
+
+    // Uppdatera dashboard-bar (baserat på kvarvarande)
+    if (barEl) barEl.style.width = grandTotal > 0 ? (remaining / grandTotal * 100) + '%' : '0%';
+
+    // Uppdatera sidebar sev-num
+    if (sevEl) {
+      if (resolvedTotal > 0) {
+        sevEl.innerHTML = `${remaining}<span style="font-size:9px;font-weight:500;color:#4e6a9a"> /${orig}</span>`;
+      } else {
+        sevEl.textContent = orig;
+      }
+    }
+    if (sevBar) sevBar.style.width = grandTotal > 0 ? (remaining / grandTotal * 100) + '%' : '0%';
+  });
+
+  // Uppdatera sidebar-totalen
+  const totalEl = document.querySelector('.sb-summary-title');
+  if (totalEl) {
+    const remaining = impacts.reduce((s, imp) => {
+      const numEl = document.getElementById('dash-num-' + imp);
+      if (!numEl) return s;
+      const orig = parseInt(numEl.dataset.orig || numEl.textContent, 10);
+      const res = document.querySelectorAll(
+        `.issue-card[data-impact="${imp}"].resolved-fixed, .issue-card[data-impact="${imp}"].resolved-wontfix`
+      ).length + document.querySelectorAll(
+        `.issue-card[data-impact="${imp}"]:not(.resolved-fixed):not(.resolved-wontfix) .el-item.el-resolved-fixed,
+         .issue-card[data-impact="${imp}"]:not(.resolved-fixed):not(.resolved-wontfix) .el-item.el-resolved-wontfix`
+      ).length;
+      return s + Math.max(0, orig - res);
+    }, 0);
+    const orig = impacts.reduce((s, imp) => {
+      const el = document.getElementById('dash-num-' + imp);
+      return s + (el ? parseInt(el.dataset.orig || el.textContent, 10) : 0);
+    }, 0);
+    totalEl.textContent = remaining < orig
+      ? `${remaining} kvar av ${orig} problem`
+      : `Totalt ${orig} problem`;
+  }
+}
+
+// ── Sidebar badge update ──
+const IMPACT_COLOR = { critical: 'nb-critical', serious: 'nb-serious', moderate: 'nb-moderate', minor: 'nb-minor', none: 'nb-none' };
+const IMPACT_WORST_ORDER = ['critical', 'serious', 'moderate', 'minor'];
+
+function updateNavBadges(filter) {
+  document.querySelectorAll('.nav-item[data-cat]').forEach(item => {
+    const badge = item.querySelector('.nav-badge');
+    if (!badge) return;
+
+    let count;
+    if (filter === 'all') {
+      count = parseInt(item.dataset.countAll, 10);
+    } else {
+      count = parseInt(item.dataset['count' + filter.charAt(0).toUpperCase() + filter.slice(1)], 10) || 0;
+    }
+
+    badge.textContent = count;
+
+    // Update badge color: worst impact among visible issues in this category
+    badge.className = 'nav-badge';
+    if (count === 0) {
+      badge.classList.add('nb-none');
+    } else if (filter === 'all') {
+      badge.classList.add('nb-' + (item.dataset.worst || 'none'));
+    } else {
+      badge.classList.add('nb-' + filter);
+    }
+  });
+}
+
+function restoreStatuses() {
+  const statuses = loadStatuses();
+  document.querySelectorAll('.issue-card').forEach(card => {
+    const ruleId = card.dataset.rule;
+    if (statuses[ruleId]) applyCardStatus(card, statuses[ruleId]);
+  });
+  updateProgress();
+  applyResolvedVisibility();
+}
+
+// ── Per-element status ──
+function setElStatus(btn, newStatus) {
+  const li    = btn.closest('.el-item');
+  const key   = li.dataset.elKey;
+  const elSt  = loadElStatuses();
+  const cur   = elSt[key];
+
+  if (cur === newStatus) {
+    delete elSt[key];
+    applyElStatus(li, null);
+  } else {
+    elSt[key] = newStatus;
+    applyElStatus(li, newStatus);
+  }
+  saveElStatuses(elSt);
+  updateCardElCount(li.closest('.issue-card'));
+  updateProgress();
+  updateDashboardCounts();
+}
+
+function applyElStatus(li, status) {
+  li.classList.remove('el-resolved-fixed', 'el-resolved-wontfix');
+  const badge = li.querySelector('.el-resolved-label');
+  li.querySelectorAll('.el-status-btn').forEach(b => b.classList.remove('el-fixed', 'el-wontfix'));
+
+  if (status === 'fixed') {
+    li.classList.add('el-resolved-fixed');
+    badge.style.display = '';
+    badge.className = 'el-resolved-label rb-fixed';
+    badge.textContent = '✅ Åtgärdad';
+    li.querySelector('.el-status-btn:first-child').classList.add('el-fixed');
+  } else if (status === 'wontfix') {
+    li.classList.add('el-resolved-wontfix');
+    badge.style.display = '';
+    badge.className = 'el-resolved-label rb-wontfix';
+    badge.textContent = '🚫 Ej relevant';
+    li.querySelector('.el-status-btn:last-of-type').classList.add('el-wontfix');
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function updateCardElCount(card) {
+  if (!card) return;
+  const total    = card.querySelectorAll('.el-item').length;
+  const resolved = card.querySelectorAll('.el-item.el-resolved-fixed, .el-item.el-resolved-wontfix').length;
+  const label    = card.querySelector('.panel-label');
+  if (!label || !label.textContent.includes('Berörda')) return;
+  const base = label.dataset.base || label.textContent;
+  label.dataset.base = base.replace(/\s*\([^)]*\)$/, '');
+  label.textContent = label.dataset.base + (resolved > 0 ? ` (${resolved}/${total} hanterade)` : ` (${total} st)`);
+}
+
+function restoreElStatuses() {
+  const elSt = loadElStatuses();
+  document.querySelectorAll('.el-item[data-el-key]').forEach(li => {
+    const status = elSt[li.dataset.elKey];
+    if (status) applyElStatus(li, status);
+  });
+  document.querySelectorAll('.issue-card').forEach(card => updateCardElCount(card));
+}
+
+function showCat(idx, el) {
+  document.querySelectorAll('.cat-view').forEach(v => v.style.display = 'none');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const view = document.getElementById('cat-' + idx);
+  if (view) view.style.display = '';
+  el.classList.add('active');
+  currentCatIdx = idx;
+  const icon = el.querySelector('.nav-icon')?.textContent || '';
+  const name = el.querySelector('.nav-name')?.textContent || '';
+  document.getElementById('topbar-title').textContent = icon + ' ' + name;
+  applyFilterAndSearch(idx);
+}
+
+function toggleCard(card) {
+  card.classList.toggle('open');
+}
+
+function expandAll(idx) {
+  const view = document.getElementById('cat-' + idx);
+  if (!view) return;
+  view.querySelectorAll('.issue-card').forEach(c => {
+    if (c.style.display !== 'none') c.classList.add('open');
+  });
+}
+
+function collapseAll(idx) {
+  const view = document.getElementById('cat-' + idx);
+  if (!view) return;
+  view.querySelectorAll('.issue-card').forEach(c => c.classList.remove('open'));
+}
+
+function dashFilter(impact, card) {
+  const isActive = card.classList.contains('active-filter');
+  document.querySelectorAll('.dash-card').forEach(c => c.classList.remove('active-filter'));
+  const targetImpact = isActive ? 'all' : impact;
+  if (!isActive) card.classList.add('active-filter');
+
+  currentFilter = targetImpact;
+  updateNavBadges(targetImpact);
+  document.querySelectorAll('.fbtn').forEach(b => b.classList.remove('on'));
+  const map = { all: 0, critical: 1, serious: 2, moderate: 3, minor: 4 };
+  const fbtn = document.querySelectorAll('.fbtn')[map[targetImpact]];
+  if (fbtn) fbtn.classList.add('on');
+
+  if (targetImpact === 'all') {
+    // Restore single-category view
+    document.getElementById('dashboard') && (document.getElementById('dashboard').style.display = '');
+    document.querySelectorAll('.cat-view').forEach((v, i) => {
+      v.style.display = i === currentCatIdx ? '' : 'none';
+    });
+    document.querySelectorAll('.nav-item').forEach((n, i) => {
+      n.classList.toggle('active', i === currentCatIdx);
+    });
+    applyFilterAndSearch(currentCatIdx);
+    return;
+  }
+
+  // Show all categories filtered by impact
+  document.getElementById('dashboard') && (document.getElementById('dashboard').style.display = '');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.cat-view').forEach((view, idx) => {
+    const cards = view.querySelectorAll('.issue-card');
+    let catVisible = 0;
+    cards.forEach(c => {
+      const statusHidden = c.dataset.hiddenByStatus === '1';
+      const match = c.dataset.impact === targetImpact && !statusHidden;
+      c.style.display = match ? '' : 'none';
+      if (match) catVisible++;
+    });
+    view.style.display = catVisible > 0 ? '' : 'none';
+    const noRes = document.getElementById('no-results-' + idx);
+    if (noRes) noRes.style.display = 'none';
+  });
+
+  const total = document.querySelectorAll(`.issue-card[data-impact="${targetImpact}"]`).length;
+  const countEl = document.getElementById('topbar-count');
+  if (countEl) countEl.textContent = `${total} problem`;
+
+  // Scroll to first visible card
+  const firstCard = document.querySelector(`.issue-card[data-impact="${targetImpact}"]`);
+  if (firstCard) firstCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function setFilter(impact, btn) {
+  // Synka fbtn-knappar
+  document.querySelectorAll('.fbtn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+
+  // Synka dashboard-kort
+  document.querySelectorAll('.dash-card').forEach(c => c.classList.remove('active-filter'));
+  if (impact !== 'all') {
+    const map = { critical: 0, serious: 1, moderate: 2, minor: 3 };
+    const dashCards = document.querySelectorAll('.dash-card');
+    if (dashCards[map[impact]]) dashCards[map[impact]].classList.add('active-filter');
+  }
+
+  // Återanvänd dashFilter-logiken via ett fakeCard-objekt
+  const fakeCard = { classList: { contains: () => false, add: () => {}, remove: () => {} } };
+  currentFilter = impact;
+  updateNavBadges(impact);
+
+  if (impact === 'all') {
+    document.getElementById('dashboard') && (document.getElementById('dashboard').style.display = '');
+    document.querySelectorAll('.cat-view').forEach((v, i) => {
+      v.style.display = i === currentCatIdx ? '' : 'none';
+    });
+    document.querySelectorAll('.nav-item').forEach((n, i) => {
+      n.classList.toggle('active', i === currentCatIdx);
+    });
+    applyFilterAndSearch(currentCatIdx);
+    return;
+  }
+
+  document.getElementById('dashboard') && (document.getElementById('dashboard').style.display = '');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.cat-view').forEach((view, idx) => {
+    const cards = view.querySelectorAll('.issue-card');
+    let catVisible = 0;
+    cards.forEach(c => {
+      const statusHidden = c.dataset.hiddenByStatus === '1';
+      const match = c.dataset.impact === impact && !statusHidden;
+      c.style.display = match ? '' : 'none';
+      if (match) catVisible++;
+    });
+    view.style.display = catVisible > 0 ? '' : 'none';
+    const noRes = document.getElementById('no-results-' + idx);
+    if (noRes) noRes.style.display = 'none';
+  });
+
+  const visible = document.querySelectorAll(`.issue-card[data-impact="${impact}"]:not([style*="display: none"])`).length;
+  const countEl = document.getElementById('topbar-count');
+  if (countEl) countEl.textContent = `${visible} problem`;
+
+  const firstCard = document.querySelector(`.issue-card[data-impact="${impact}"]`);
+  if (firstCard) firstCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function onSearch(val) {
+  currentSearch = val.trim().toLowerCase();
+  document.getElementById('search-empty').style.display = 'none';
+
+  if (currentSearch.length === 0) {
+    // Restore normal category view
+    document.getElementById('dashboard') && (document.getElementById('dashboard').style.display = '');
+    document.querySelectorAll('.cat-view').forEach((v, i) => {
+      v.style.display = i === currentCatIdx ? '' : 'none';
+    });
+    applyFilterAndSearch(currentCatIdx);
+    return;
+  }
+
+  // Hide dashboard and show all categories while searching
+  document.getElementById('dashboard') && (document.getElementById('dashboard').style.display = 'none');
+  document.querySelectorAll('.cat-view').forEach(v => v.style.display = '');
+
+  let totalVisible = 0;
+  document.querySelectorAll('.cat-view').forEach((view, idx) => {
+    const cards = view.querySelectorAll('.issue-card');
+    let catVisible = 0;
+    cards.forEach(card => {
+      const searchData = card.dataset.search || '';
+      const impactMatch = currentFilter === 'all' || card.dataset.impact === currentFilter;
+      const searchMatch = searchData.includes(currentSearch);
+      const statusHidden = card.dataset.hiddenByStatus === '1';
+      const show = impactMatch && searchMatch && !statusHidden;
+      card.style.display = show ? '' : 'none';
+      if (show) catVisible++;
+    });
+    const noRes = document.getElementById('no-results-' + idx);
+    if (noRes) noRes.style.display = catVisible === 0 ? '' : 'none';
+    totalVisible += catVisible;
+  });
+
+  const countEl = document.getElementById('topbar-count');
+  if (countEl) countEl.textContent = `${totalVisible} träff${totalVisible !== 1 ? 'ar' : ''}`;
+
+  const searchEmpty = document.getElementById('search-empty');
+  if (totalVisible === 0) {
+    searchEmpty.style.display = 'block';
+    document.getElementById('search-term-display').textContent = currentSearch;
+  }
+
+  // Update sidebar active state — deactivate while searching
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+}
+
+function applyFilterAndSearch(idx) {
+  if (currentSearch.length > 0) {
+    onSearch(currentSearch);
+    return;
+  }
+  const view = document.getElementById('cat-' + idx);
+  if (!view) return;
+  const cards = view.querySelectorAll('.issue-card');
+  let visible = 0;
+  cards.forEach(card => {
+    const impactMatch = currentFilter === 'all' || card.dataset.impact === currentFilter;
+    const statusHidden = card.dataset.hiddenByStatus === '1';
+    const show = impactMatch && !statusHidden;
+    card.style.display = show ? '' : 'none';
+    if (show) visible++;
+  });
+  const noRes = document.getElementById('no-results-' + idx);
+  if (noRes) noRes.style.display = visible === 0 ? '' : 'none';
+  const total = cards.length;
+  const countEl = document.getElementById('topbar-count');
+  if (countEl) {
+    countEl.textContent = currentFilter === 'all'
+      ? `${visible} problem`
+      : `${visible} av ${total} visas`;
+  }
+}
+
+function toggleExtra(btn) {
+  const card  = btn.closest('.card-panel');
+  const extras = card.querySelectorAll('.el-extra');
+  const open   = extras[0]?.style.display !== 'none';
+  extras.forEach(el => el.style.display = open ? 'none' : '');
+  const total  = btn.dataset.total;
+  btn.innerHTML = open ? `Visa alla ${total} element ▼` : `Dölj extra element ▲`;
+}
+
+function toggleHtml(btn) {
+  const box = btn.closest('.el-item').querySelector('.el-html-hidden');
+  if (!box) return;
+  const open = box.style.display !== 'none';
+  if (!open) {
+    const html = btn.closest('.el-actions').dataset.html || '';
+    box.textContent = html.replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+  }
+  box.style.display = open ? 'none' : '';
+  btn.textContent = open ? 'Visa HTML' : 'Dölj HTML';
+}
+
+function copyElFromHidden(el) {
+  navigator.clipboard.writeText(el.textContent).then(() => {
+    el.style.background = '#d4edff';
+    setTimeout(() => el.style.background = '', 800);
+    showToast('HTML kopierat! ✓');
+  });
+}
+
+function copySel(btn) {
+  const sel = btn.closest('.el-actions').dataset.selector;
+  navigator.clipboard.writeText(sel).then(() => showToast('Selektor kopierad! ✓'));
+}
+
+function copyConsole(btn) {
+  const sel = btn.closest('.el-actions').dataset.selector;
+  const escaped = sel.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+  const snippet = `var el = document.querySelector('${escaped}'); if(el){ el.scrollIntoView({behavior:'smooth',block:'center'}); el.style.outline='3px solid #e53e3e'; el.style.outlineOffset='3px'; } else { console.warn('Element hittades inte:', '${escaped}'); }`;
+  navigator.clipboard.writeText(snippet).then(() => showToast('Konsolkommando kopierat — klistra in i F12-konsolen ✓'));
+}
+
+function toggleSelector(btn) {
+  const box = btn.closest('.el-item').querySelector('.el-selector');
+  if (!box) return;
+  const open = box.classList.toggle('visible');
+  btn.textContent = open ? 'Dölj selektor' : 'Visa selektor';
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function printReport() {
+  // Bygg print-summary
+  const impacts = [
+    { key: 'critical', label: 'Kritiska',   cls: 'psc-critical' },
+    { key: 'serious',  label: 'Allvarliga', cls: 'psc-serious'  },
+    { key: 'moderate', label: 'Måttliga',   cls: 'psc-moderate' },
+    { key: 'minor',    label: 'Mindre',     cls: 'psc-minor'    },
+  ];
+  const row = document.getElementById('print-summary-row');
+  if (row) {
+    row.innerHTML = '';
+    let totalFixed = 0, totalWontfix = 0;
+    impacts.forEach(({ key, label, cls }) => {
+      const el = document.getElementById('dash-num-' + key);
+      const orig = el ? parseInt(el.dataset.orig, 10) : 0;
+
+      // Kort-nivå: hela kortet markerat
+      const fixedCards   = document.querySelectorAll(`.issue-card[data-impact="${key}"].resolved-fixed`).length;
+      const wontfixCards = document.querySelectorAll(`.issue-card[data-impact="${key}"].resolved-wontfix`).length;
+
+      // Element-nivå: enskilda element markerade (på kort som INTE är helmarkerade)
+      const fixedEls   = document.querySelectorAll(`.issue-card[data-impact="${key}"]:not(.resolved-fixed):not(.resolved-wontfix) .el-item.el-resolved-fixed`).length;
+      const wontfixEls = document.querySelectorAll(`.issue-card[data-impact="${key}"]:not(.resolved-fixed):not(.resolved-wontfix) .el-item.el-resolved-wontfix`).length;
+
+      const fixed   = fixedCards + fixedEls;
+      const wontfix = wontfixCards + wontfixEls;
+      const open    = Math.max(0, orig - fixed - wontfix);
+      totalFixed += fixed; totalWontfix += wontfix;
+      const chip = document.createElement('span');
+      chip.className = 'print-summary-chip ' + cls;
+      chip.textContent = `${label}: ${open} kvar av ${orig}`;
+      row.appendChild(chip);
+    });
+    const doneChip = document.createElement('span');
+    doneChip.className = 'print-summary-chip psc-done';
+    doneChip.textContent = `✅ Åtgärdade: ${totalFixed}`;
+    row.appendChild(doneChip);
+    const wontChip = document.createElement('span');
+    wontChip.className = 'print-summary-chip psc-wontfix';
+    wontChip.textContent = `🚫 Ej relevanta: ${totalWontfix}`;
+    row.appendChild(wontChip);
+  }
+
+  // Visa alla kategorier och kort tillfälligt
+  const catViews = document.querySelectorAll('.cat-view');
+  const prevDisplay = Array.from(catViews).map(v => v.style.display);
+  catViews.forEach(v => v.style.display = '');
+
+  const cards = document.querySelectorAll('.issue-card');
+  const prevCardDisplay = Array.from(cards).map(c => c.style.display);
+  cards.forEach(c => { c.style.display = ''; c.classList.add('open'); });
+
+  window.print();
+
+  // Återställ efter utskrift
+  catViews.forEach((v, i) => v.style.display = prevDisplay[i]);
+  cards.forEach((c, i) => {
+    c.style.display = prevCardDisplay[i];
+    c.classList.remove('open');
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  restoreStatuses();
+  restoreElStatuses();
+  updateDashboardCounts();
+  updateNavBadges('all');
+  applyFilterAndSearch(0);
+});
+</script>
 </body>
 </html>
