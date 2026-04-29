@@ -67,7 +67,7 @@ async def scan(request: ScanRequest) -> Response:
 
     try:
         # Steg 1: Hitta felen (fakta, ingen AI inblandad här)
-        issues = await scan_url(url_str)
+        issues, site_logo_b64 = await scan_url(url_str)
 
         if not issues:
             # Returnera 200 med ett meddelande istället för en tom PDF
@@ -78,37 +78,50 @@ async def scan(request: ScanRequest) -> Response:
                 media_type="text/plain; charset=utf-8",
             )
 
-        # Steg 2: Förklara varje unik rule_id med AI (en förklaring per regeltyp)
-        # Många sidor har t.ex. 30 bilder utan alt-text — samma förklaring gäller alla.
-        seen: dict = {}
-        unique_issues = []
+        # Steg 2: Förklara varje fel med AI.
+        # Bildregler: analyseras individuellt med vision (varje bild kan vara unik).
+        # Övriga regler: en förklaring per rule_id återanvänds för alla instanser.
+        from explainer import ExplainedIssue, IMAGE_RULES
+
+        seen_rule: dict = {}
+        issues_to_explain = []
         for issue in issues:
-            if issue.rule_id not in seen:
-                seen[issue.rule_id] = None
-                unique_issues.append(issue)
+            if issue.rule_id in IMAGE_RULES:
+                issues_to_explain.append(issue)
+            elif issue.rule_id not in seen_rule:
+                seen_rule[issue.rule_id] = None
+                issues_to_explain.append(issue)
 
         explanations_list = await asyncio.gather(*[
             explain_issue(issue, provider=request.provider, model=request.model)
-            for issue in unique_issues[:50]
+            for issue in issues_to_explain[:80]
         ])
-        explanation_by_rule = {e.issue.rule_id: e for e in explanations_list}
 
-        # Bygg en ExplainedIssue per originalinstans men återanvänd AI-förklaringen
-        from explainer import ExplainedIssue
+        explanation_by_rule: dict = {}
+        explanation_by_obj:  dict = {}
+        for exp in explanations_list:
+            if exp.issue.rule_id in IMAGE_RULES:
+                explanation_by_obj[id(exp.issue)] = exp
+            else:
+                explanation_by_rule[exp.issue.rule_id] = exp
+
         explained = []
         for issue in issues:
-            template = explanation_by_rule[issue.rule_id]
-            explained.append(ExplainedIssue(
-                issue=issue,
-                plain_swedish=template.plain_swedish,
-                suggested_fix=template.suggested_fix,
-                confidence=template.confidence,
-                citations=template.citations,
-                retrieved_chunks=template.retrieved_chunks,
-            ))
+            if issue.rule_id in IMAGE_RULES and id(issue) in explanation_by_obj:
+                explained.append(explanation_by_obj[id(issue)])
+            elif issue.rule_id in explanation_by_rule:
+                template = explanation_by_rule[issue.rule_id]
+                explained.append(ExplainedIssue(
+                    issue=issue,
+                    plain_swedish=template.plain_swedish,
+                    suggested_fix=template.suggested_fix,
+                    confidence=template.confidence,
+                    citations=template.citations,
+                    retrieved_chunks=template.retrieved_chunks,
+                ))
 
         # Steg 3: Generera HTML-rapport
-        html_content = generate_html(url_str, list(explained))
+        html_content = generate_html(url_str, list(explained), site_logo_b64=site_logo_b64)
 
         filename = f"a11y-rapport-{url_str.replace('https://', '').replace('/', '-')}.html"
         return Response(

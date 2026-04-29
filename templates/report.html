@@ -84,6 +84,24 @@ body {
 }
 .sb-date { font-size: 10px; color: #4e6a9a; margin-top: 3px; }
 
+.sb-logo-wrap { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.sb-logo {
+  height: 36px;
+  width: auto;
+  max-width: 100px;
+  object-fit: contain;
+  border-radius: 5px;
+  background: rgba(255,255,255,0.08);
+  padding: 3px;
+  flex-shrink: 0;
+}
+.sb-logo-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.35;
+}
+
 /* Sidebar summary chips */
 .sb-summary {
   padding: 14px 18px;
@@ -525,9 +543,61 @@ body {
 }
 
 .el-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
-.el-item { font-size: 12.5px; }
-.el-label { font-weight: 600; color: var(--text); margin-bottom: 3px; font-size: 12px; }
-.el-html {
+.el-item {
+  font-size: 12.5px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 6px 8px;
+  margin: -6px -8px;
+  transition: background 0.15s, border-color 0.15s, opacity 0.2s;
+}
+.el-item.el-resolved-fixed   { background: #f0fdf4; border-color: #bbf7d0; opacity: 0.6; }
+.el-item.el-resolved-wontfix { background: #f9fafb; border-color: #e5e7eb; opacity: 0.5; }
+.el-item.el-resolved-fixed .el-label   { text-decoration: line-through; color: var(--muted); }
+.el-item.el-resolved-wontfix .el-label { text-decoration: line-through; color: var(--muted); }
+
+.el-status-row {
+  display: flex;
+  gap: 5px;
+  margin-top: 5px;
+  align-items: center;
+}
+.el-status-btn {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 9px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--white);
+  color: var(--muted);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.12s;
+  white-space: nowrap;
+}
+.el-status-btn:hover { border-color: #b0c8f0; }
+.el-status-btn.el-fixed   { background: #ecfdf5; color: #15803d; border-color: #86efac; }
+.el-status-btn.el-wontfix { background: #f5f5f5; color: #6b7280; border-color: #d1d5db; }
+.el-resolved-label {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 10px;
+  margin-left: 2px;
+}
+.el-resolved-label.rb-fixed   { background: #ecfdf5; color: #15803d; border: 1px solid #86efac; }
+.el-resolved-label.rb-wontfix { background: #f5f5f5; color: #6b7280; border: 1px solid #d1d5db; }
+
+.el-label { font-weight: 600; color: var(--text); margin-bottom: 2px; font-size: 12px; }
+.el-selector-inline {
+  font-family: "Consolas", monospace;
+  font-size: 9.5px;
+  color: #8899bb;
+  margin-bottom: 5px;
+  word-break: break-all;
+  line-height: 1.4;
+}
+.el-html-hidden {
   font-family: "Consolas", monospace;
   font-size: 11px;
   background: #f4f7ff;
@@ -538,9 +608,34 @@ body {
   word-break: break-all;
   cursor: pointer;
   transition: background 0.1s;
+  margin-top: 4px;
 }
-.el-html:hover { background: #e4eeff; }
+.el-html-hidden:hover { background: #e4eeff; }
 .copy-hint { font-size: 9.5px; color: #a0b0cc; margin-top: 2px; }
+
+.vision-fix {
+  font-size: 11.5px;
+  background: #f0f7ff;
+  border: 1px solid #bdd9ff;
+  border-radius: 5px;
+  padding: 6px 10px;
+  margin-top: 5px;
+  color: #1a3a70;
+  line-height: 1.55;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+}
+.vision-fix code {
+  background: #ddeeff;
+  color: #1a3fa0;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-family: "Consolas", monospace;
+  word-break: break-all;
+  white-space: normal;
+}
 
 .el-actions { display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
 .el-btn {
@@ -556,6 +651,81 @@ body {
   white-space: nowrap;
 }
 .el-btn:hover { background: var(--blue-lt); color: var(--blue); border-color: #b0c8f0; }
+
+/* ── Status buttons ── */
+.status-bar {
+  display: flex;
+  gap: 6px;
+  padding: 8px 16px 10px;
+  border-top: 1px solid var(--border);
+  background: #fafbff;
+}
+.status-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--white);
+  color: var(--muted);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.14s;
+}
+.status-btn:hover { border-color: #b0c8f0; }
+.status-btn.fixed { background: #ecfdf5; color: #15803d; border-color: #86efac; }
+.status-btn.wontfix { background: #f5f5f5; color: #6b7280; border-color: #d1d5db; }
+
+/* Resolved card styling */
+.issue-card.resolved-fixed {
+  opacity: 0.55;
+  border-left-color: #86efac !important;
+}
+.issue-card.resolved-wontfix {
+  opacity: 0.45;
+  border-left-color: #d1d5db !important;
+}
+.issue-card.resolved-fixed .card-title-row,
+.issue-card.resolved-wontfix .card-title-row {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+.resolved-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.rb-fixed    { background: #ecfdf5; color: #15803d; border: 1px solid #86efac; }
+.rb-wontfix  { background: #f5f5f5; color: #6b7280; border: 1px solid #d1d5db; }
+
+/* Progress bar in sidebar */
+.sb-progress {
+  padding: 10px 18px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.sb-progress-label {
+  font-size: 9.5px;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  color: #4a6080;
+  margin-bottom: 6px;
+}
+.progress-track {
+  height: 6px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+.progress-fill-fixed   { height: 100%; background: #22c55e; border-radius: 3px; transition: width 0.35s ease; float: left; }
+.progress-fill-wontfix { height: 100%; background: #9ca3af; border-radius: 3px; transition: width 0.35s ease; float: left; }
+.progress-text { font-size: 10px; color: #6a90d8; }
 .el-selector {
   font-family: "Consolas", monospace;
   font-size: 10px;
@@ -670,13 +840,22 @@ mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
       <div class="sev-row">
         <span class="sev-dot d-{{ cls }}"></span>
         <span class="sev-label">{{ label }}</span>
-        <span class="sev-num">{{ sev }}</span>
+        <span class="sev-num" id="sev-num-{{ cls }}">{{ sev }}</span>
         <div class="sev-bar-wrap">
-          <div class="sev-bar d-{{ cls }}"
+          <div class="sev-bar d-{{ cls }}" id="sev-bar-{{ cls }}"
                style="width: {{ ((sev / total * 100) | int) if total > 0 else 0 }}%"></div>
         </div>
       </div>
       {% endfor %}
+    </div>
+
+    <div class="sb-progress" id="sb-progress">
+      <div class="sb-progress-label">Hanteringsframsteg</div>
+      <div class="progress-track" id="progress-track">
+        <div class="progress-fill-fixed"   id="progress-fixed"   style="width:0%"></div>
+        <div class="progress-fill-wontfix" id="progress-wontfix" style="width:0%"></div>
+      </div>
+      <div class="progress-text" id="progress-text">0 av {{ total_issues }} hanterade</div>
     </div>
 
     <nav class="sb-nav">
@@ -691,7 +870,14 @@ mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
       {% endfor %}
       {% set cat_total = ct.c + ct.s + ct.m + ct.i %}
       <div class="nav-item{% if loop.first %} active{% endif %}"
-           onclick="showCat({{ loop.index0 }}, this)">
+           onclick="showCat({{ loop.index0 }}, this)"
+           data-cat="{{ loop.index0 }}"
+           data-count-all="{{ cat_total }}"
+           data-count-critical="{{ ct.c }}"
+           data-count-serious="{{ ct.s }}"
+           data-count-moderate="{{ ct.m }}"
+           data-count-minor="{{ ct.i }}"
+           data-worst="{{ cat.worst_impact }}">
         <span class="nav-icon">{{ cat.icon }}</span>
         <div class="nav-body">
           <div class="nav-name">{{ cat.category }}</div>
@@ -702,7 +888,7 @@ mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
             {% if ct.i > 0 %}<div class="nmb d-minor"    style="width:{{ [(ct.i / cat_total * 60)|int, 4]|max }}px"></div>{% endif %}
           </div>
         </div>
-        <span class="nav-badge nb-{{ cat.worst_impact }}">{{ cat.issues|length }}</span>
+        <span class="nav-badge nb-{{ cat.worst_impact }}">{{ cat_total }}</span>
       </div>
       {% endfor %}
     </nav>
@@ -728,6 +914,7 @@ mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
         <button class="fbtn fs"  onclick="setFilter('serious',  this)">Allvarliga</button>
         <button class="fbtn fm"  onclick="setFilter('moderate', this)">Måttliga</button>
         <button class="fbtn fi"  onclick="setFilter('minor',    this)">Mindre</button>
+        <button class="fbtn" id="btn-resolved" onclick="toggleResolved(this)" title="Visa/dölj hanterade problem" style="margin-left:4px">Visa hanterade</button>
       </div>
     </div>
 
@@ -743,11 +930,12 @@ mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
             (count_by_impact.moderate, 'Måttliga',  'moderate'),
             (count_by_impact.minor,    'Mindre',    'minor')
         ] %}
-        <div class="dash-card dc-{{ cls }}" onclick="dashFilter('{{ cls }}', this)" title="Filtrera på {{ label | lower }}">
-          <div class="dash-num">{{ sev }}</div>
+        <div class="dash-card dc-{{ cls }}" onclick="dashFilter('{{ cls }}', this)" title="Filtrera på {{ label | lower }}"
+             data-impact="{{ cls }}" data-total="{{ sev }}">
+          <div class="dash-num" id="dash-num-{{ cls }}">{{ sev }}</div>
           <div class="dash-label">{{ label }}</div>
           <div class="dash-bar-wrap">
-            <div class="dash-bar" style="width:{{ ((sev / total * 100)|int) if total > 0 else 0 }}%"></div>
+            <div class="dash-bar" id="dash-bar-{{ cls }}" style="width:{{ ((sev / total * 100)|int) if total > 0 else 0 }}%"></div>
           </div>
         </div>
         {% endfor %}
@@ -777,6 +965,7 @@ mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
 
         {% for issue in cat.issues %}
         <div class="issue-card" data-impact="{{ issue.impact }}"
+             data-rule="{{ issue.rule_id }}"
              data-search="{{ (issue.plain_swedish ~ ' ' ~ issue.rule_id ~ ' ' ~ (issue.wcag_reference or '') ~ ' ' ~ issue.selectors|map(attribute='label')|join(' ')) | lower | striptags }}">
 
           <div class="card-summary" onclick="toggleCard(this.parentElement)">
@@ -788,6 +977,7 @@ mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
               <span class="card-rule">{{ issue.rule_id }}</span>
               <span class="card-count-pill">
                 {{ issue.count }} träff{{ "ar" if issue.count > 1 else "" }}
+                <span class="resolved-badge" style="display:none"></span>
                 <span class="chevron">▼</span>
               </span>
             </div>
@@ -802,6 +992,11 @@ mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
               {% endif %}
             </div>
             {% endif %}
+          </div>
+
+          <div class="status-bar">
+            <button class="status-btn" onclick="setStatus(this, 'fixed')"   title="Markera som åtgärdad">✅ Åtgärdad</button>
+            <button class="status-btn" onclick="setStatus(this, 'wontfix')" title="Markera som ej relevant">🚫 Ej relevant</button>
           </div>
 
           <div class="card-body">
@@ -840,22 +1035,35 @@ mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
 
               <ul class="el-list">
                 {% for sel in issue.selectors %}
+                {% set el_key = issue.rule_id ~ '::' ~ loop.index %}
                 <li class="el-item{% if loop.index > 5 %} el-extra{% endif %}"
+                    data-el-key="{{ el_key }}"
                     {% if loop.index > 5 %}style="display:none"{% endif %}>
                   <div class="el-label">{{ sel.label }}</div>
-                  {% if sel.html %}
-                  <div class="el-html"
-                       onclick="copyEl(this, '{{ sel.html | replace("'","&#39;") | replace("\\","\\\\") }}')"
-                       title="Klicka för att kopiera HTML">{{ sel.html }}</div>
+                  {% if sel.selector %}
+                  <div class="el-selector-inline">{{ sel.selector | e }}</div>
+                  {% endif %}
+                  {% if sel.vision_fix %}
+                  <div class="vision-fix">🤖 <strong>AI-bedömning:</strong> {{ sel.vision_fix | safe }}</div>
                   {% endif %}
                   {% if sel.selector %}
-                  <div class="el-actions" data-selector="{{ sel.selector | e }}">
-                    <button class="el-btn" onclick="copySel(this)" title="Kopiera CSS-selektor">Kopiera selektor</button>
-                    <button class="el-btn" onclick="copyConsole(this)" title="Kopiera ett kommando att köra i webbläsarens konsol (F12)">Kopiera konsolkommando</button>
-                    <button class="el-btn" onclick="toggleSelector(this)" title="Visa CSS-selektor">Visa selektor</button>
+                  <div class="el-actions" data-selector="{{ sel.selector | e }}"
+                       data-html="{{ sel.html | replace('"', '&quot;') | replace("'","&#39;") | replace("\\","\\\\") }}">
+                    <button class="el-btn" onclick="copySel(this)">Kopiera selektor</button>
+                    <button class="el-btn" onclick="copyConsole(this)">Kopiera konsolkommando</button>
+                    <button class="el-btn" onclick="toggleHtml(this)">Visa HTML</button>
+                    <button class="el-btn" onclick="toggleSelector(this)">Visa selektor</button>
                   </div>
+                  <div class="el-html-hidden" style="display:none"
+                       onclick="copyElFromHidden(this)"
+                       title="Klicka för att kopiera HTML"></div>
                   <div class="el-selector">{{ sel.selector | e }}</div>
                   {% endif %}
+                  <div class="el-status-row">
+                    <button class="el-status-btn" onclick="setElStatus(this, 'fixed')"   title="Markera detta element som åtgärdat">✅ Åtgärdad</button>
+                    <button class="el-status-btn" onclick="setElStatus(this, 'wontfix')" title="Markera detta element som ej relevant">🚫 Ej relevant</button>
+                    <span class="el-resolved-label" style="display:none"></span>
+                  </div>
                 </li>
                 {% endfor %}
               </ul>
@@ -902,6 +1110,305 @@ mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
 let currentFilter = 'all';
 let currentCatIdx = 0;
 let currentSearch = '';
+let showResolved = false;
+
+// ── localStorage keys ──
+const _URL_KEY     = '{{ url | replace("https://","") | replace("http://","") }}';
+const STORAGE_KEY  = 'a11y_status_'    + _URL_KEY;   // per issue-card (rule_id)
+const EL_STORE_KEY = 'a11y_el_status_' + _URL_KEY;   // per element
+
+function loadStatuses() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
+  catch { return {}; }
+}
+function saveStatuses(s) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch {}
+}
+function loadElStatuses() {
+  try { return JSON.parse(localStorage.getItem(EL_STORE_KEY) || '{}'); }
+  catch { return {}; }
+}
+function saveElStatuses(s) {
+  try { localStorage.setItem(EL_STORE_KEY, JSON.stringify(s)); } catch {}
+}
+
+// ── Status per issue card ──
+function setStatus(btn, newStatus) {
+  const card   = btn.closest('.issue-card');
+  const ruleId = card.dataset.rule;
+  const statuses = loadStatuses();
+  const current  = statuses[ruleId];
+
+  // Toggle off if already set
+  if (current === newStatus) {
+    delete statuses[ruleId];
+    applyCardStatus(card, null);
+  } else {
+    statuses[ruleId] = newStatus;
+    applyCardStatus(card, newStatus);
+  }
+  saveStatuses(statuses);
+  updateProgress();
+  updateDashboardCounts();
+  applyResolvedVisibility();
+}
+
+function applyCardStatus(card, status) {
+  card.classList.remove('resolved-fixed', 'resolved-wontfix');
+  const badge = card.querySelector('.resolved-badge');
+  const btns  = card.querySelectorAll('.status-btn');
+
+  btns.forEach(b => b.classList.remove('fixed', 'wontfix'));
+
+  if (status === 'fixed') {
+    card.classList.add('resolved-fixed');
+    badge.style.display = '';
+    badge.className = 'resolved-badge rb-fixed';
+    badge.textContent = '✅ Åtgärdad';
+    card.querySelector('.status-btn:first-child').classList.add('fixed');
+  } else if (status === 'wontfix') {
+    card.classList.add('resolved-wontfix');
+    badge.style.display = '';
+    badge.className = 'resolved-badge rb-wontfix';
+    badge.textContent = '🚫 Ej relevant';
+    card.querySelector('.status-btn:last-child').classList.add('wontfix');
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function applyResolvedVisibility() {
+  document.querySelectorAll('.issue-card').forEach(card => {
+    const isResolved = card.classList.contains('resolved-fixed') || card.classList.contains('resolved-wontfix');
+    if (!showResolved && isResolved) {
+      card.dataset.hiddenByStatus = '1';
+    } else {
+      delete card.dataset.hiddenByStatus;
+    }
+  });
+  applyFilterAndSearch(currentCatIdx);
+}
+
+function toggleResolved(btn) {
+  showResolved = !showResolved;
+  btn.classList.toggle('on', showResolved);
+  btn.textContent = showResolved ? 'Dölj hanterade' : 'Visa hanterade';
+  applyResolvedVisibility();
+}
+
+function updateProgress() {
+  // Räkna unika element (per el-key) + kort som helhet är markerade
+  const cardSt = loadStatuses();
+  const elSt   = loadElStatuses();
+
+  const totalEl = document.querySelectorAll('.el-item[data-el-key]').length;
+  const totalCards = document.querySelectorAll('.issue-card').length;
+
+  // En "hanterad enhet" = antingen ett element eller ett helt kort
+  const fixedEl    = document.querySelectorAll('.el-item.el-resolved-fixed').length;
+  const wontfixEl  = document.querySelectorAll('.el-item.el-resolved-wontfix').length;
+  const fixedCards = Object.values(cardSt).filter(v => v === 'fixed').length;
+  const wontCards  = Object.values(cardSt).filter(v => v === 'wontfix').length;
+
+  // Progressbar baseras på element om det finns element, annars kort
+  const total   = totalEl > 0 ? totalEl : totalCards;
+  const fixed   = totalEl > 0 ? fixedEl   : fixedCards;
+  const wontfix = totalEl > 0 ? wontfixEl : wontCards;
+  const handled = fixed + wontfix;
+
+  const pctFixed   = total ? (fixed   / total * 100) : 0;
+  const pctWontfix = total ? (wontfix / total * 100) : 0;
+
+  const pf = document.getElementById('progress-fixed');
+  const pw = document.getElementById('progress-wontfix');
+  const pt = document.getElementById('progress-text');
+  if (pf) pf.style.width = pctFixed + '%';
+  if (pw) pw.style.width = pctWontfix + '%';
+  if (pt) pt.textContent = `${handled} av ${total} element hanterade`;
+}
+
+// ── Dashboard & sidebar count update ──
+function updateDashboardCounts() {
+  const impacts = ['critical', 'serious', 'moderate', 'minor'];
+  const grandTotal = impacts.reduce((s, imp) => {
+    const el = document.getElementById('dash-num-' + imp);
+    return s + (el ? parseInt(el.dataset.orig || el.textContent, 10) : 0);
+  }, 0);
+
+  impacts.forEach(imp => {
+    const numEl  = document.getElementById('dash-num-' + imp);
+    const barEl  = document.getElementById('dash-bar-' + imp);
+    const sevEl  = document.getElementById('sev-num-' + imp);
+    const sevBar = document.getElementById('sev-bar-' + imp);
+    if (!numEl) return;
+
+    // Spara originaltalet första gången
+    if (!numEl.dataset.orig) numEl.dataset.orig = numEl.textContent.replace(/\D.*/, '').trim();
+    const orig = parseInt(numEl.dataset.orig, 10);
+
+    // Räkna hur många kort med detta impact är resolved (kort-nivå)
+    const resolvedCards = document.querySelectorAll(
+      `.issue-card[data-impact="${imp}"].resolved-fixed, .issue-card[data-impact="${imp}"].resolved-wontfix`
+    ).length;
+
+    // Räkna hur många individuella element med detta impact är resolved
+    // (via kort som inte är helmarkerade)
+    const resolvedEls = document.querySelectorAll(
+      `.issue-card[data-impact="${imp}"]:not(.resolved-fixed):not(.resolved-wontfix) .el-item.el-resolved-fixed,
+       .issue-card[data-impact="${imp}"]:not(.resolved-fixed):not(.resolved-wontfix) .el-item.el-resolved-wontfix`
+    ).length;
+
+    const totalCards = document.querySelectorAll(`.issue-card[data-impact="${imp}"]`).length;
+    const resolvedTotal = resolvedCards + resolvedEls;
+    const remaining = Math.max(0, orig - resolvedTotal);
+
+    // Uppdatera dashboard-kort
+    if (resolvedTotal > 0) {
+      numEl.innerHTML = `${remaining}<span style="font-size:14px;font-weight:500;color:var(--muted)"> / ${orig}</span>`;
+    } else {
+      numEl.textContent = orig;
+    }
+
+    // Uppdatera dashboard-bar (baserat på kvarvarande)
+    if (barEl) barEl.style.width = grandTotal > 0 ? (remaining / grandTotal * 100) + '%' : '0%';
+
+    // Uppdatera sidebar sev-num
+    if (sevEl) {
+      if (resolvedTotal > 0) {
+        sevEl.innerHTML = `${remaining}<span style="font-size:9px;font-weight:500;color:#4e6a9a"> /${orig}</span>`;
+      } else {
+        sevEl.textContent = orig;
+      }
+    }
+    if (sevBar) sevBar.style.width = grandTotal > 0 ? (remaining / grandTotal * 100) + '%' : '0%';
+  });
+
+  // Uppdatera sidebar-totalen
+  const totalEl = document.querySelector('.sb-summary-title');
+  if (totalEl) {
+    const remaining = impacts.reduce((s, imp) => {
+      const numEl = document.getElementById('dash-num-' + imp);
+      if (!numEl) return s;
+      const orig = parseInt(numEl.dataset.orig || numEl.textContent, 10);
+      const res = document.querySelectorAll(
+        `.issue-card[data-impact="${imp}"].resolved-fixed, .issue-card[data-impact="${imp}"].resolved-wontfix`
+      ).length + document.querySelectorAll(
+        `.issue-card[data-impact="${imp}"]:not(.resolved-fixed):not(.resolved-wontfix) .el-item.el-resolved-fixed,
+         .issue-card[data-impact="${imp}"]:not(.resolved-fixed):not(.resolved-wontfix) .el-item.el-resolved-wontfix`
+      ).length;
+      return s + Math.max(0, orig - res);
+    }, 0);
+    const orig = impacts.reduce((s, imp) => {
+      const el = document.getElementById('dash-num-' + imp);
+      return s + (el ? parseInt(el.dataset.orig || el.textContent, 10) : 0);
+    }, 0);
+    totalEl.textContent = remaining < orig
+      ? `${remaining} kvar av ${orig} problem`
+      : `Totalt ${orig} problem`;
+  }
+}
+
+// ── Sidebar badge update ──
+const IMPACT_COLOR = { critical: 'nb-critical', serious: 'nb-serious', moderate: 'nb-moderate', minor: 'nb-minor', none: 'nb-none' };
+const IMPACT_WORST_ORDER = ['critical', 'serious', 'moderate', 'minor'];
+
+function updateNavBadges(filter) {
+  document.querySelectorAll('.nav-item[data-cat]').forEach(item => {
+    const badge = item.querySelector('.nav-badge');
+    if (!badge) return;
+
+    let count;
+    if (filter === 'all') {
+      count = parseInt(item.dataset.countAll, 10);
+    } else {
+      count = parseInt(item.dataset['count' + filter.charAt(0).toUpperCase() + filter.slice(1)], 10) || 0;
+    }
+
+    badge.textContent = count;
+
+    // Update badge color: worst impact among visible issues in this category
+    badge.className = 'nav-badge';
+    if (count === 0) {
+      badge.classList.add('nb-none');
+    } else if (filter === 'all') {
+      badge.classList.add('nb-' + (item.dataset.worst || 'none'));
+    } else {
+      badge.classList.add('nb-' + filter);
+    }
+  });
+}
+
+function restoreStatuses() {
+  const statuses = loadStatuses();
+  document.querySelectorAll('.issue-card').forEach(card => {
+    const ruleId = card.dataset.rule;
+    if (statuses[ruleId]) applyCardStatus(card, statuses[ruleId]);
+  });
+  updateProgress();
+  applyResolvedVisibility();
+}
+
+// ── Per-element status ──
+function setElStatus(btn, newStatus) {
+  const li    = btn.closest('.el-item');
+  const key   = li.dataset.elKey;
+  const elSt  = loadElStatuses();
+  const cur   = elSt[key];
+
+  if (cur === newStatus) {
+    delete elSt[key];
+    applyElStatus(li, null);
+  } else {
+    elSt[key] = newStatus;
+    applyElStatus(li, newStatus);
+  }
+  saveElStatuses(elSt);
+  updateCardElCount(li.closest('.issue-card'));
+  updateProgress();
+  updateDashboardCounts();
+}
+
+function applyElStatus(li, status) {
+  li.classList.remove('el-resolved-fixed', 'el-resolved-wontfix');
+  const badge = li.querySelector('.el-resolved-label');
+  li.querySelectorAll('.el-status-btn').forEach(b => b.classList.remove('el-fixed', 'el-wontfix'));
+
+  if (status === 'fixed') {
+    li.classList.add('el-resolved-fixed');
+    badge.style.display = '';
+    badge.className = 'el-resolved-label rb-fixed';
+    badge.textContent = '✅ Åtgärdad';
+    li.querySelector('.el-status-btn:first-child').classList.add('el-fixed');
+  } else if (status === 'wontfix') {
+    li.classList.add('el-resolved-wontfix');
+    badge.style.display = '';
+    badge.className = 'el-resolved-label rb-wontfix';
+    badge.textContent = '🚫 Ej relevant';
+    li.querySelector('.el-status-btn:last-of-type').classList.add('el-wontfix');
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function updateCardElCount(card) {
+  if (!card) return;
+  const total    = card.querySelectorAll('.el-item').length;
+  const resolved = card.querySelectorAll('.el-item.el-resolved-fixed, .el-item.el-resolved-wontfix').length;
+  const label    = card.querySelector('.panel-label');
+  if (!label || !label.textContent.includes('Berörda')) return;
+  const base = label.dataset.base || label.textContent;
+  label.dataset.base = base.replace(/\s*\([^)]*\)$/, '');
+  label.textContent = label.dataset.base + (resolved > 0 ? ` (${resolved}/${total} hanterade)` : ` (${total} st)`);
+}
+
+function restoreElStatuses() {
+  const elSt = loadElStatuses();
+  document.querySelectorAll('.el-item[data-el-key]').forEach(li => {
+    const status = elSt[li.dataset.elKey];
+    if (status) applyElStatus(li, status);
+  });
+  document.querySelectorAll('.issue-card').forEach(card => updateCardElCount(card));
+}
 
 function showCat(idx, el) {
   document.querySelectorAll('.cat-view').forEach(v => v.style.display = 'none');
@@ -941,6 +1448,7 @@ function dashFilter(impact, card) {
   if (!isActive) card.classList.add('active-filter');
 
   currentFilter = targetImpact;
+  updateNavBadges(targetImpact);
   document.querySelectorAll('.fbtn').forEach(b => b.classList.remove('on'));
   const map = { all: 0, critical: 1, serious: 2, moderate: 3, minor: 4 };
   const fbtn = document.querySelectorAll('.fbtn')[map[targetImpact]];
@@ -966,7 +1474,8 @@ function dashFilter(impact, card) {
     const cards = view.querySelectorAll('.issue-card');
     let catVisible = 0;
     cards.forEach(c => {
-      const match = c.dataset.impact === targetImpact;
+      const statusHidden = c.dataset.hiddenByStatus === '1';
+      const match = c.dataset.impact === targetImpact && !statusHidden;
       c.style.display = match ? '' : 'none';
       if (match) catVisible++;
     });
@@ -985,17 +1494,57 @@ function dashFilter(impact, card) {
 }
 
 function setFilter(impact, btn) {
-  currentFilter = impact;
+  // Synka fbtn-knappar
   document.querySelectorAll('.fbtn').forEach(b => b.classList.remove('on'));
   btn.classList.add('on');
-  // Sync dashboard highlight
+
+  // Synka dashboard-kort
   document.querySelectorAll('.dash-card').forEach(c => c.classList.remove('active-filter'));
   if (impact !== 'all') {
     const map = { critical: 0, serious: 1, moderate: 2, minor: 3 };
-    const cards = document.querySelectorAll('.dash-card');
-    if (cards[map[impact]]) cards[map[impact]].classList.add('active-filter');
+    const dashCards = document.querySelectorAll('.dash-card');
+    if (dashCards[map[impact]]) dashCards[map[impact]].classList.add('active-filter');
   }
-  applyFilterAndSearch(currentCatIdx);
+
+  // Återanvänd dashFilter-logiken via ett fakeCard-objekt
+  const fakeCard = { classList: { contains: () => false, add: () => {}, remove: () => {} } };
+  currentFilter = impact;
+  updateNavBadges(impact);
+
+  if (impact === 'all') {
+    document.getElementById('dashboard') && (document.getElementById('dashboard').style.display = '');
+    document.querySelectorAll('.cat-view').forEach((v, i) => {
+      v.style.display = i === currentCatIdx ? '' : 'none';
+    });
+    document.querySelectorAll('.nav-item').forEach((n, i) => {
+      n.classList.toggle('active', i === currentCatIdx);
+    });
+    applyFilterAndSearch(currentCatIdx);
+    return;
+  }
+
+  document.getElementById('dashboard') && (document.getElementById('dashboard').style.display = '');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.cat-view').forEach((view, idx) => {
+    const cards = view.querySelectorAll('.issue-card');
+    let catVisible = 0;
+    cards.forEach(c => {
+      const statusHidden = c.dataset.hiddenByStatus === '1';
+      const match = c.dataset.impact === impact && !statusHidden;
+      c.style.display = match ? '' : 'none';
+      if (match) catVisible++;
+    });
+    view.style.display = catVisible > 0 ? '' : 'none';
+    const noRes = document.getElementById('no-results-' + idx);
+    if (noRes) noRes.style.display = 'none';
+  });
+
+  const visible = document.querySelectorAll(`.issue-card[data-impact="${impact}"]:not([style*="display: none"])`).length;
+  const countEl = document.getElementById('topbar-count');
+  if (countEl) countEl.textContent = `${visible} problem`;
+
+  const firstCard = document.querySelector(`.issue-card[data-impact="${impact}"]`);
+  if (firstCard) firstCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function onSearch(val) {
@@ -1024,7 +1573,8 @@ function onSearch(val) {
       const searchData = card.dataset.search || '';
       const impactMatch = currentFilter === 'all' || card.dataset.impact === currentFilter;
       const searchMatch = searchData.includes(currentSearch);
-      const show = impactMatch && searchMatch;
+      const statusHidden = card.dataset.hiddenByStatus === '1';
+      const show = impactMatch && searchMatch && !statusHidden;
       card.style.display = show ? '' : 'none';
       if (show) catVisible++;
     });
@@ -1056,9 +1606,11 @@ function applyFilterAndSearch(idx) {
   const cards = view.querySelectorAll('.issue-card');
   let visible = 0;
   cards.forEach(card => {
-    const match = currentFilter === 'all' || card.dataset.impact === currentFilter;
-    card.style.display = match ? '' : 'none';
-    if (match) visible++;
+    const impactMatch = currentFilter === 'all' || card.dataset.impact === currentFilter;
+    const statusHidden = card.dataset.hiddenByStatus === '1';
+    const show = impactMatch && !statusHidden;
+    card.style.display = show ? '' : 'none';
+    if (show) visible++;
   });
   const noRes = document.getElementById('no-results-' + idx);
   if (noRes) noRes.style.display = visible === 0 ? '' : 'none';
@@ -1066,7 +1618,7 @@ function applyFilterAndSearch(idx) {
   const countEl = document.getElementById('topbar-count');
   if (countEl) {
     countEl.textContent = currentFilter === 'all'
-      ? `${total} problem`
+      ? `${visible} problem`
       : `${visible} av ${total} visas`;
   }
 }
@@ -1080,9 +1632,20 @@ function toggleExtra(btn) {
   btn.innerHTML = open ? `Visa alla ${total} element ▼` : `Dölj extra element ▲`;
 }
 
-function copyEl(el, text) {
-  const decoded = text.replace(/&#39;/g, "'");
-  navigator.clipboard.writeText(decoded).then(() => {
+function toggleHtml(btn) {
+  const box = btn.closest('.el-item').querySelector('.el-html-hidden');
+  if (!box) return;
+  const open = box.style.display !== 'none';
+  if (!open) {
+    const html = btn.closest('.el-actions').dataset.html || '';
+    box.textContent = html.replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+  }
+  box.style.display = open ? 'none' : '';
+  btn.textContent = open ? 'Visa HTML' : 'Dölj HTML';
+}
+
+function copyElFromHidden(el) {
+  navigator.clipboard.writeText(el.textContent).then(() => {
     el.style.background = '#d4edff';
     setTimeout(() => el.style.background = '', 800);
     showToast('HTML kopierat! ✓');
@@ -1115,7 +1678,13 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2200);
 }
 
-document.addEventListener('DOMContentLoaded', () => applyFilterAndSearch(0));
+document.addEventListener('DOMContentLoaded', () => {
+  restoreStatuses();
+  restoreElStatuses();
+  updateDashboardCounts();
+  updateNavBadges('all');
+  applyFilterAndSearch(0);
+});
 </script>
 </body>
 </html>
