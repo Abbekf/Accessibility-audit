@@ -50,14 +50,20 @@ class ExplainedIssue(BaseModel):
     retrieved_chunks: List[RetrievedChunk]  # För transparens i rapporten
 
 
+# Bildregler där vision-analys ger konkret nytta
+IMAGE_RULES = {
+    "image-alt", "input-image-alt", "role-img-alt",
+    "svg-img-alt", "image-redundant-alt",
+}
+
 # Den här prompten är NOGGRANT skriven för att tvinga fram källbaserade svar.
-# Varje regel här är med av en anledning.
 SYSTEM_PROMPT = """Du är en assistent som förklarar tillgänglighetsproblem \
 för webbutvecklare, baserat på officiella WCAG- och EAA-dokument.
 
 Du kommer få:
 1. Ett tekniskt fel hittat av axe-core (detta är FAKTA)
 2. 2-3 utdrag från WCAG 2.2 och/eller EAA som är relevanta för felet (din enda KUNSKAPSKÄLLA)
+3. Ibland: en skärmdump av det berörda elementet — använd den för att ge ett KONKRET förslag
 
 STRIKTA REGLER du MÅSTE följa:
 1. Använd ENDAST information från de utdrag som tillhandahålls. Hitta INTE på \
@@ -67,7 +73,8 @@ säg det tydligt istället för att gissa.
 3. Citera alltid vilken källa och referens du stödjer dig på.
 4. Skriv förklaringen på enkel, pedagogisk svenska.
 5. Förslag ska vara KONKRETA med kodexempel där det är relevant.
-6. Om förslaget är en gissning (t.ex. en alt-text du hittat på), markera det tydligt.
+6. Om du ser en skärmdump av en bild: avgör om bilden är DEKORATIV eller INNEHÅLLSBÄRANDE \
+och ge ett specifikt förslag. Markera tydligt om det är din bedömning.
 
 Svara ALLTID i exakt detta format, inget annat:
 
@@ -80,7 +87,7 @@ SÄKERHET: <high, medium, eller low>"""
 async def explain_issue(issue: A11yIssue, provider: str = "openai", model: str = "gpt-4o") -> ExplainedIssue:
     """
     Förklarar ett fel med hjälp av RAG-pipelinen.
-    Stöder OpenAI, Claude (Anthropic) och Gemini.
+    För bildregler med skärmdump används vision för konkret analys.
     """
     retrieved = retrieve_relevant_laws(issue, top_k=3)
 
@@ -91,6 +98,8 @@ async def explain_issue(issue: A11yIssue, provider: str = "openai", model: str =
         ])
     else:
         context_block = "(Ingen relevant lagtext hittades i kunskapsbasen.)"
+
+    use_vision = issue.rule_id in IMAGE_RULES and bool(issue.screenshot_b64)
 
     user_prompt = f"""FEL HITTAT AV AXE-CORE:
 
@@ -106,14 +115,15 @@ RELEVANTA UTDRAG FRÅN WCAG / EAA:
 
 {context_block}
 
+{"Se skärmdumpen av det berörda elementet bifogad nedan. Avgör om bilden verkar vara DEKORATIV (använd alt='') eller INNEHÅLLSBÄRANDE (föreslå en konkret alt-text baserad på vad du ser). Markera att det är din visuella bedömning." if use_vision else ""}
 Förklara problemet och föreslå en fix. Baserat ENDAST på utdragen ovan."""
 
     if provider == "claude":
-        response_text = await _call_claude(model, user_prompt)
+        response_text = await _call_claude(model, user_prompt, screenshot_b64=issue.screenshot_b64 if use_vision else "")
     elif provider == "gemini":
-        response_text = await _call_gemini(model, user_prompt)
+        response_text = await _call_gemini(model, user_prompt, screenshot_b64=issue.screenshot_b64 if use_vision else "")
     else:
-        response_text = await _call_openai(model, user_prompt)
+        response_text = await _call_openai(model, user_prompt, screenshot_b64=issue.screenshot_b64 if use_vision else "")
 
     explanation, fix, citations, confidence = _parse_response(response_text)
 
@@ -127,48 +137,67 @@ Förklara problemet och föreslå en fix. Baserat ENDAST på utdragen ovan."""
     )
 
 
-async def _call_openai(model: str, user_prompt: str) -> str:
+async def _call_openai(model: str, user_prompt: str, screenshot_b64: str = "") -> str:
     if not _openai_client:
         raise RuntimeError("OPENAI_API_KEY saknas i .env")
+    content: list = [{"type": "text", "text": user_prompt}]
+    if screenshot_b64:
+        content.append({
+            "type": "image_url",
+            "image_url": {"url": f"data:image/png;base64,{screenshot_b64}", "detail": "low"},
+        })
     response = await _openai_client.chat.completions.create(
         model=model,
         max_tokens=700,
         temperature=0.2,
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": user_prompt},
+            {"role": "user", "content": content},
         ],
     )
     return response.choices[0].message.content
 
 
-async def _call_claude(model: str, user_prompt: str) -> str:
+async def _call_claude(model: str, user_prompt: str, screenshot_b64: str = "") -> str:
     if not _claude_key:
         raise RuntimeError("ANTHROPIC_API_KEY saknas i .env")
     import anthropic
     client = anthropic.AsyncAnthropic(api_key=_claude_key)
+    content: list = [{"type": "text", "text": user_prompt}]
+    if screenshot_b64:
+        content.append({
+            "type": "image",
+            "source": {"type": "base64", "media_type": "image/png", "data": screenshot_b64},
+        })
     response = await client.messages.create(
         model=model,
         max_tokens=700,
         system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": user_prompt}],
+        messages=[{"role": "user", "content": content}],
     )
     return response.content[0].text
 
 
-async def _call_gemini(model: str, user_prompt: str) -> str:
+async def _call_gemini(model: str, user_prompt: str, screenshot_b64: str = "") -> str:
     if not _gemini_key:
         raise RuntimeError("GEMINI_API_KEY saknas i .env")
     import google.generativeai as genai
+    import base64 as _base64
     genai.configure(api_key=_gemini_key)
     gemini_model = genai.GenerativeModel(
         model_name=model,
         system_instruction=SYSTEM_PROMPT,
     )
+    parts: list = [user_prompt]
+    if screenshot_b64:
+        parts.append({
+            "mime_type": "image/png",
+            "data": _base64.b64decode(screenshot_b64),
+        })
     loop = __import__('asyncio').get_event_loop()
     response = await loop.run_in_executor(
         None,
-        lambda: gemini_model.generate_content(user_prompt),
+        lambda: gemini_model.generate_content(parts),
     )
     return response.text
 

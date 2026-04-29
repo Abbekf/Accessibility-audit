@@ -48,7 +48,7 @@ class A11yIssue(BaseModel):
     screenshot_b64: str = ""  # Base64-kodad skärmdump av elementet (om tillgänglig)
 
 
-async def scan_url(url: str) -> List[A11yIssue]:
+async def scan_url(url: str) -> tuple[List[A11yIssue], str]:
     """
     Öppnar en webbläsare, besöker URL:en och kör axe-core.
     Returnerar en lista med hittade problem.
@@ -156,9 +156,39 @@ async def _scan_url_async(url: str) -> List[A11yIssue]:
                     screenshot_b64=screenshot_b64,
                 ))
 
+        site_logo_b64 = await _fetch_site_logo(page)
         await browser.close()
 
-    return issues
+    return issues, site_logo_b64
+
+
+async def _fetch_site_logo(page) -> str:
+    """Försöker hämta sidans logotyp: og:image → apple-touch-icon → favicon."""
+    import httpx
+    from urllib.parse import urljoin
+
+    candidates = await page.evaluate("""() => {
+        const metas = [
+            document.querySelector('meta[property="og:image"]')?.content,
+            document.querySelector('meta[name="twitter:image"]')?.content,
+            document.querySelector('link[rel="apple-touch-icon"]')?.href,
+            document.querySelector('link[rel~="icon"][sizes="192x192"]')?.href,
+            document.querySelector('link[rel~="icon"][sizes="180x180"]')?.href,
+            document.querySelector('link[rel~="icon"][sizes="128x128"]')?.href,
+            document.querySelector('link[rel~="icon"]')?.href,
+        ];
+        return metas.filter(Boolean);
+    }""")
+
+    for url in candidates:
+        try:
+            async with httpx.AsyncClient(timeout=6, follow_redirects=True) as client:
+                r = await client.get(url)
+            if r.status_code == 200 and r.headers.get("content-type", "").startswith("image"):
+                return base64.b64encode(r.content).decode()
+        except Exception:
+            continue
+    return ""
 
 
 def _format_wcag(tag: str) -> str:

@@ -31,45 +31,180 @@ _jinja_env = Environment(loader=FileSystemLoader(str(_template_dir)))
 
 _MAX_ELEMENTS_SHOWN = 999
 
+_IMAGE_RULES_SET = {
+    "image-alt", "input-image-alt", "role-img-alt",
+    "svg-img-alt", "image-redundant-alt",
+}
 
-def _describe_element(selector: str, html: str) -> str:
-    """Generate a short human-readable label from an element's selector and HTML."""
+
+_RULE_PROBLEM = {
+    "image-alt":                  "saknar alt-text",
+    "input-image-alt":            "saknar alt-text",
+    "role-img-alt":               "saknar alt-text",
+    "svg-img-alt":                "saknar alt-text",
+    "image-redundant-alt":        "har redundant alt-text",
+    "label":                      "saknar etikett",
+    "label-content-name-mismatch":"etikett stämmer inte med synlig text",
+    "select-name":                "saknar etikett",
+    "button-name":                "saknar synlig text",
+    "link-name":                  "saknar synlig text",
+    "color-contrast":             "har otillräcklig kontrast",
+    "color-contrast-enhanced":    "har otillräcklig kontrast (förhöjd nivå)",
+    "heading-order":              "bryter rubrikordningen",
+    "page-has-heading-one":       "sidan saknar H1-rubrik",
+    "duplicate-id":               "har duplicerat ID",
+    "duplicate-id-active":        "har duplicerat aktivt ID",
+    "duplicate-id-aria":          "har duplicerat ARIA-ID",
+    "aria-required-attr":         "saknar obligatoriskt ARIA-attribut",
+    "aria-required-children":     "saknar obligatoriska barn-element",
+    "aria-required-parent":       "saknar obligatoriskt förälder-element",
+    "aria-roles":                 "har ogiltigt ARIA-roll",
+    "aria-valid-attr":            "har ogiltigt ARIA-attribut",
+    "aria-valid-attr-value":      "har ogiltigt ARIA-attributvärde",
+    "aria-hidden-focus":          "är dolt för skärmläsare men kan fokuseras",
+    "aria-hidden-body":           "hela sidan är dold för skärmläsare",
+    "scrollable-region-focusable":"rullningsbart område kan inte nås med tangentbord",
+    "scrolling-region-focusable": "rullningsbart område kan inte nås med tangentbord",
+    "keyboard":                   "kan inte nås med tangentbord",
+    "focus-order-semantics":      "har fel fokusordning",
+    "tabindex":                   "har felaktigt tabindex",
+    "bypass":                     "blockerar hopp till huvudinnehåll",
+    "document-title":             "sidan saknar titel",
+    "html-has-lang":              "saknar språkattribut",
+    "html-lang-valid":            "har ogiltigt språkattribut",
+    "frame-title":                "saknar titel",
+    "meta-viewport":              "blockerar zoom",
+    "target-size":                "är för liten att trycka på",
+    "autocomplete-valid":         "har felaktigt autocomplete-värde",
+    "nested-interactive":         "innehåller ett annat klickbart element (nästlad interaktivitet)",
+    "landmark-one-main":          "sidan saknar main-landmärke",
+    "landmark-unique":            "landmärke är inte unikt",
+    "list":                       "har felaktig liststruktur",
+    "listitem":                   "listelement används utanför lista",
+    "definition-list":            "har felaktig definitionslistestruktur",
+    "dlitem":                     "definitionselement används utanför lista",
+    "video-caption":              "saknar textning",
+    "audio-caption":              "saknar textning",
+}
+
+_TAG_LABELS = {
+    "summary":    "Expanderbart avsnitt",
+    "details":    "Expanderbart avsnitt",
+    "nav":        "Navigeringsmeny",
+    "header":     "Sidhuvud",
+    "footer":     "Sidfot",
+    "main":       "Huvudinnehåll",
+    "aside":      "Sidopanel",
+    "section":    "Sektion",
+    "article":    "Artikel",
+    "form":       "Formulär",
+    "select":     "Vallistor",
+    "textarea":   "Textfält",
+    "table":      "Tabell",
+    "iframe":     "Inbäddad sida (iframe)",
+    "video":      "Video",
+    "audio":      "Ljud",
+    "svg":        "SVG-grafik",
+    "canvas":     "Canvas-element",
+    "dialog":     "Dialog/modal",
+    "h1": "Rubrik (H1)", "h2": "Rubrik (H2)", "h3": "Rubrik (H3)",
+    "h4": "Rubrik (H4)", "h5": "Rubrik (H5)", "h6": "Rubrik (H6)",
+}
+
+
+def _extract_inner_text(html: str, max_len: int = 50) -> str:
+    """Plockar ut synlig text ur en HTML-snutt."""
+    text = re.sub(r'<[^>]+>', ' ', html or "")
+    text = re.sub(r'\s+', ' ', text).strip()
+    if len(text) > max_len:
+        return text[:max_len] + "…"
+    return text
+
+
+def _describe_element(selector: str, html: str, rule_id: str = "", index: int = 0) -> str:
+    """Genererar en läsbar svensk etikett som beskriver elementet och varför det är markerat."""
+    problem = _RULE_PROBLEM.get(rule_id, "")
+    num = f" #{index}" if index > 1 else ""
     h = (html or "").lower()
+
+    # ── Bilder ──
     if "<img" in h:
-        # Försök visa en riktig src-URL (inte base64-data)
         src = re.search(r'src=["\']([^"\']+)["\']', html or "")
         if src:
             val = src.group(1)
             if not val.startswith("data:"):
                 filename = val.rstrip("/").split("/")[-1].split("?")[0]
-                return f"Bild: {filename[:60]}" if filename else f"Bild: {val[:60]}"
-        # Fallback: sista segmentet av CSS-selektorn (unikt per element)
-        last = (selector or "").split(">")[-1].strip()
-        return f"Bild ({last[:50]})" if last else "Bild utan alt-text"
-    if "<a" in h:
+                return f"Bild{num}: {filename[:50]} — {problem}" if filename else f"Bild{num} — {problem}"
+        alt = re.search(r'alt=["\']([^"\']*)["\']', html or "")
+        if alt and not alt.group(1).strip():
+            return f"Bild{num} — tomt alt-attribut (dekorativ?)"
+        return f"Bild{num} — {problem or 'saknar alt-text'}"
+
+    # ── Länkar ──
+    if re.search(r'<a[\s>]', h):
+        inner = _extract_inner_text(html)
         href = re.search(r'href=["\']([^"\']+)["\']', html or "")
         if href:
             val = href.group(1)
             if val.startswith("tel:"):
-                return f"Telefon-länk: {val[4:]}"
+                return f"Telefon-länk: {val[4:]} — {problem or 'saknar synlig text'}"
             if val.startswith("mailto:"):
-                return f"E-postlänk: {val[7:]}"
-            path = val.rstrip("/").split("/")[-1] or val
-            return f"Länk: /{path[:50]}" if "/" in val else f"Länk: {val[:50]}"
-        return "Länk utan synlig text"
+                return f"E-postlänk: {val[7:]} — {problem or 'saknar synlig text'}"
+        if inner:
+            return f"Länk{num}: \"{inner}\" — {problem}" if problem else f"Länk{num}: \"{inner}\""
+        return f"Länk{num} — {problem or 'saknar synlig text'}"
+
+    # ── Knappar ──
     if "<button" in h:
-        text = re.search(r'<button[^>]*>([^<]+)', html or "")
-        label = text.group(1).strip()[:40] if text else ""
-        return f'Knapp: "{label}"' if label else "Knapp utan synlig text"
+        inner = _extract_inner_text(html)
+        aria = re.search(r'aria-label=["\']([^"\']+)["\']', html or "")
+        name = aria.group(1) if aria else inner
+        if name:
+            return f"Knapp{num}: \"{name[:40]}\" — {problem}" if problem else f"Knapp{num}: \"{name[:40]}\""
+        return f"Knapp{num} — {problem or 'saknar synlig text'}"
+
+    # ── Formulärfält ──
     if "<input" in h:
-        t = re.search(r'type=["\']([^"\']+)["\']', html or "")
+        t    = re.search(r'type=["\']([^"\']+)["\']', html or "")
+        name = re.search(r'(?:placeholder|aria-label|name|id)=["\']([^"\']+)["\']', html or "")
+        typ  = t.group(1) if t else "text"
+        lbl  = f" \"{name.group(1)[:30]}\"" if name else ""
+        return f"Formulärfält ({typ}){lbl}{num} — {problem or 'saknar etikett'}"
+
+    if "<select" in h:
+        name = re.search(r'(?:name|id|aria-label)=["\']([^"\']+)["\']', html or "")
+        lbl = f" \"{name.group(1)[:30]}\"" if name else ""
+        return f"Valruta{lbl}{num} — {problem or 'saknar etikett'}"
+
+    if "<textarea" in h:
         name = re.search(r'(?:name|id|placeholder)=["\']([^"\']+)["\']', html or "")
-        typ = t.group(1) if t else "text"
-        label = f": {name.group(1)}" if name else ""
-        return f"Formulärfält ({typ}{label})"
-    # Fallback: use last segment of the CSS selector
-    last = (selector or "").split(">")[-1].strip()
-    return last[:70] + ("…" if len(last) > 70 else last) if last else selector[:70]
+        lbl = f" \"{name.group(1)[:30]}\"" if name else ""
+        return f"Textfält{lbl}{num} — {problem or 'saknar etikett'}"
+
+    # ── Rubriknivåer ──
+    for level in range(1, 7):
+        if f"<h{level}" in h:
+            inner = _extract_inner_text(html)
+            base = f"Rubrik H{level}: \"{inner}\"" if inner else f"Rubrik H{level}{num}"
+            return f"{base} — {problem}" if problem else base
+
+    # ── Övriga kända taggar ──
+    tag_match = re.search(r'<([a-z][a-z0-9]*)', h)
+    if tag_match:
+        tag = tag_match.group(1)
+        tag_label = _TAG_LABELS.get(tag, "")
+        inner = _extract_inner_text(html)
+        if tag_label:
+            base = f"{tag_label}{num}: \"{inner}\"" if inner else f"{tag_label}{num}"
+            return f"{base} — {problem}" if problem else base
+        if inner:
+            base = f"<{tag}>{num}: \"{inner}\""
+            return f"{base} — {problem}" if problem else base
+
+    # ── Sista utväg ──
+    last = (selector or "").split(">")[-1].strip().split(":nth")[0].strip()
+    base = last[:55] if last else (selector or "")[:55]
+    return f"{base}{num} — {problem}" if problem else base
 
 
 def _md_to_html(text: str) -> str:
@@ -187,6 +322,7 @@ def _group_issues(items: List[ExplainedIssue]) -> list:
     groups: OrderedDict = OrderedDict()
     for item in items:
         key = item.issue.rule_id
+        is_image_rule = key in _IMAGE_RULES_SET
         if key not in groups:
             groups[key] = {
                 "rule_id": item.issue.rule_id,
@@ -201,13 +337,17 @@ def _group_issues(items: List[ExplainedIssue]) -> list:
                 "selectors": [],
                 "count": 0,
                 "digg_category": _digg_category(item.issue.rule_id, item.issue.wcag_reference or ""),
+                "is_image_rule": is_image_rule,
             }
         groups[key]["count"] += 1
         if len(groups[key]["selectors"]) < _MAX_ELEMENTS_SHOWN:
+            el_index = groups[key]["count"]  # count incrementeras precis innan
             groups[key]["selectors"].append({
-                "label": _describe_element(item.issue.selector, item.issue.affected_html),
+                "label": _describe_element(item.issue.selector, item.issue.affected_html, item.issue.rule_id, el_index),
                 "html": str(html_escape(_truncate_html(item.issue.affected_html))),
                 "selector": item.issue.selector,
+                # För bildregler: individuell AI-bedömning per element
+                "vision_fix": _md_to_html(item.suggested_fix) if is_image_rule else "",
             })
     return list(groups.values())
 
@@ -229,7 +369,7 @@ def _group_by_digg(groups: list) -> list:
     return result
 
 
-def generate_html(url: str, items: List[ExplainedIssue]) -> str:
+def generate_html(url: str, items: List[ExplainedIssue], site_logo_b64: str = "") -> str:
     """
     Genererar en interaktiv HTML-rapport och returnerar den som sträng.
     """
@@ -243,9 +383,14 @@ def generate_html(url: str, items: List[ExplainedIssue]) -> str:
     grouped = _group_issues(items)
     digg_groups = _group_by_digg(grouped)
 
+    from urllib.parse import urlparse
+    site_name = urlparse(url).netloc.replace("www.", "").split(".")[0].capitalize()
+
     template = _jinja_env.get_template("report.html")
     return template.render(
         url=url,
+        site_name=site_name,
+        site_logo_b64=site_logo_b64,
         scan_date=datetime.now().strftime("%Y-%m-%d %H:%M"),
         digg_groups=digg_groups,
         total_issues=len(items),

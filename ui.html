@@ -32,6 +32,15 @@
       white-space: nowrap;
       letter-spacing: 0.3px;
     }
+    .header-brand em {
+      font-style: normal;
+      font-weight: 900;
+      font-size: 15px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #fff;
+      margin-right: 2px;
+    }
     .header-brand span { color: #7eaaff; }
 
     .scan-form {
@@ -113,6 +122,21 @@
     .header-actions a:hover,
     .header-actions button:hover { background: rgba(255,255,255,0.16); }
 
+    .open-btn {
+      padding: 7px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid rgba(255,255,255,0.25);
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+      transition: background 0.15s;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .open-btn:hover { background: rgba(255,255,255,0.16); }
+
     .status-bar {
       width: 100%;
       padding: 6px 0 0;
@@ -185,17 +209,20 @@
       <div class="model-picker">
         <select id="provider-select" title="Välj AI-leverantör">
           <option value="openai">OpenAI</option>
-          <option value="claude">Claude</option>
+          <option value="claude" selected>Claude</option>
           <option value="gemini">Gemini</option>
         </select>
         <select id="model-select" title="Välj modell"></select>
       </div>
 
       <div class="header-actions" id="header-actions" style="display:none;">
-        <a id="fullscreen-link" href="#" target="_blank">Helskärm ↗</a>
         <button id="save-btn">Spara</button>
-        <a id="download-link" href="#" download="rapport.html">Ladda ner</a>
       </div>
+
+      <label class="open-btn" title="Öppna en sparad rapport">
+        Öppna rapport
+        <input type="file" id="open-file" accept=".html" style="display:none">
+      </label>
 
       <div class="status-bar" id="status"></div>
     </header>
@@ -241,12 +268,15 @@
     const providerSelect = document.getElementById('provider-select');
     const modelSelect    = document.getElementById('model-select');
 
+    const DEFAULT_MODEL = { claude: 'claude-haiku-4-5-20251001' };
+
     function populateModels(provider) {
       modelSelect.innerHTML = '';
       for (const m of MODELS[provider]) {
         const opt = document.createElement('option');
         opt.value = m.value;
         opt.textContent = m.label;
+        if (DEFAULT_MODEL[provider] && m.value === DEFAULT_MODEL[provider]) opt.selected = true;
         modelSelect.appendChild(opt);
       }
     }
@@ -258,10 +288,10 @@
     const frame       = document.getElementById('report-frame');
     const emptyState  = document.getElementById('empty-state');
     const actions     = document.getElementById('header-actions');
-    const dlLink      = document.getElementById('download-link');
-    const fsLink      = document.getElementById('fullscreen-link');
     const saveBtn     = document.getElementById('save-btn');
+    const openFile    = document.getElementById('open-file');
 
+    let lastBlob    = null;
     let lastBlobUrl = null;
     let lastUrl     = null;
 
@@ -303,15 +333,10 @@
         });
         if (!res.ok) throw new Error(await res.text());
 
-        const blob = await res.blob();
+        lastBlob = await res.blob();
         if (lastBlobUrl) URL.revokeObjectURL(lastBlobUrl);
-        lastBlobUrl = URL.createObjectURL(blob);
+        lastBlobUrl = URL.createObjectURL(lastBlob);
         lastUrl = url;
-
-        const slug = url.replace(/https?:\/\//, '').replace(/\W+/g, '-');
-        dlLink.href     = lastBlobUrl;
-        dlLink.download = `rapport-${slug}.html`;
-        fsLink.href     = lastBlobUrl;
 
         frame.src = lastBlobUrl;
         showReport();
@@ -327,12 +352,25 @@
     };
 
     saveBtn.onclick = () => {
-      if (!lastBlobUrl) return;
-      const saved = JSON.parse(localStorage.getItem('savedReports') || '[]');
-      const name  = prompt('Namn på rapporten?', lastUrl) || lastUrl;
-      saved.push({ url: lastBlobUrl, name, date: new Date().toLocaleString('sv-SE') });
-      localStorage.setItem('savedReports', JSON.stringify(saved));
-      alert('Sparad!');
+      if (!lastBlob) return;
+      const slug = (lastUrl || 'rapport').replace(/https?:\/\//, '').replace(/\W+/g, '-').replace(/-+$/, '');
+      const filename = `rapport-${slug}.html`;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(lastBlob);
+      a.download = filename;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    };
+
+    openFile.onchange = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const url = URL.createObjectURL(file);
+      frame.src = url;
+      showReport();
+      actions.style.display = 'none';
+      statusEl.textContent = `Öppnad: ${file.name}`;
+      openFile.value = '';
     };
   </script>
 </body>
