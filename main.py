@@ -28,13 +28,15 @@ from pathlib import Path
 
 from scanner import scan_url
 from explainer import explain_issue
-from reporter import generate_pdf
+from reporter import generate_html
+from favicon_route import router as favicon_router
 
 
 app = FastAPI(
     title="Tillgänglighetsrevisor",
     description="Ett AI-assisterat verktyg som granskar webbsidor mot WCAG.",
 )
+app.include_router(favicon_router)
 
 
 class ScanRequest(BaseModel):
@@ -43,6 +45,8 @@ class ScanRequest(BaseModel):
     Pydantic validerar automatiskt att URL:en är giltig.
     """
     url: HttpUrl
+    provider: str = "openai"
+    model: str = "gpt-4o"
 
 
 
@@ -74,22 +78,43 @@ async def scan(request: ScanRequest) -> Response:
                 media_type="text/plain; charset=utf-8",
             )
 
-        # Steg 2: Förklara varje fel med AI
-        # asyncio.gather kör alla förklaringar parallellt = snabbare
-        # Vi begränsar till 20 samtidiga anrop för att inte sprida API-limits
-        explained = await asyncio.gather(*[
-            explain_issue(issue) for issue in issues[:50]  # max 50 för MVP
+        # Steg 2: Förklara varje unik rule_id med AI (en förklaring per regeltyp)
+        # Många sidor har t.ex. 30 bilder utan alt-text — samma förklaring gäller alla.
+        seen: dict = {}
+        unique_issues = []
+        for issue in issues:
+            if issue.rule_id not in seen:
+                seen[issue.rule_id] = None
+                unique_issues.append(issue)
+
+        explanations_list = await asyncio.gather(*[
+            explain_issue(issue, provider=request.provider, model=request.model)
+            for issue in unique_issues[:50]
         ])
+        explanation_by_rule = {e.issue.rule_id: e for e in explanations_list}
 
-        # Steg 3: Generera PDF-rapport
-        pdf_bytes = generate_pdf(url_str, list(explained))
+        # Bygg en ExplainedIssue per originalinstans men återanvänd AI-förklaringen
+        from explainer import ExplainedIssue
+        explained = []
+        for issue in issues:
+            template = explanation_by_rule[issue.rule_id]
+            explained.append(ExplainedIssue(
+                issue=issue,
+                plain_swedish=template.plain_swedish,
+                suggested_fix=template.suggested_fix,
+                confidence=template.confidence,
+                citations=template.citations,
+                retrieved_chunks=template.retrieved_chunks,
+            ))
 
-        # Returnera PDF:en med rätt filnamn
-        filename = f"a11y-rapport-{url_str.replace('https://', '').replace('/', '-')}.pdf"
+        # Steg 3: Generera HTML-rapport
+        html_content = generate_html(url_str, list(explained))
+
+        filename = f"a11y-rapport-{url_str.replace('https://', '').replace('/', '-')}.html"
         return Response(
-            content=pdf_bytes,
-            media_type="application/pdf",
-            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+            content=html_content.encode("utf-8"),
+            media_type="text/html; charset=utf-8",
+            headers={"Content-Disposition": f'inline; filename="{filename}"'},
         )
 
     except Exception as e:
