@@ -104,16 +104,42 @@ async def _scan_url_async(url: str) -> List[A11yIssue]:
             wcag_tags = [t for t in violation.get("tags", []) if t.startswith("wcag")]
             wcag_ref = _format_wcag(wcag_tags[0]) if wcag_tags else "Okänd"
 
-            # Ta en skärmdump av det första drabbade elementet per violation
+            # Ta en kontextskärmdump: scrolla till elementet, markera det med
+            # en röd ram och fotografera hela viewporten så man ser var på sidan det sitter.
             screenshot_b64 = ""
             nodes = violation.get("nodes", [])
             first_target = nodes[0].get("target", []) if nodes else []
             if first_target:
                 try:
-                    locator = page.locator(first_target[0]).first
+                    selector = first_target[0]
+                    locator = page.locator(selector).first
                     await locator.scroll_into_view_if_needed(timeout=2000)
-                    img_bytes = await locator.screenshot(timeout=3000)
+                    # Lägg på en synlig markering
+                    await page.evaluate(
+                        """sel => {
+                            const el = document.querySelector(sel);
+                            if (el) {
+                                el.dataset._a11yOld = el.style.outline;
+                                el.style.outline = '3px solid #e53e3e';
+                                el.style.outlineOffset = '2px';
+                            }
+                        }""",
+                        selector,
+                    )
+                    img_bytes = await page.screenshot(timeout=4000)
                     screenshot_b64 = base64.b64encode(img_bytes).decode()
+                    # Ta bort markeringen igen
+                    await page.evaluate(
+                        """sel => {
+                            const el = document.querySelector(sel);
+                            if (el) {
+                                el.style.outline = el.dataset._a11yOld || '';
+                                el.style.outlineOffset = '';
+                                delete el.dataset._a11yOld;
+                            }
+                        }""",
+                        selector,
+                    )
                 except Exception:
                     screenshot_b64 = ""
 

@@ -45,6 +45,8 @@ class ScanRequest(BaseModel):
     Pydantic validerar automatiskt att URL:en är giltig.
     """
     url: HttpUrl
+    provider: str = "openai"
+    model: str = "gpt-4o"
 
 
 
@@ -86,7 +88,8 @@ async def scan(request: ScanRequest) -> Response:
                 unique_issues.append(issue)
 
         explanations_list = await asyncio.gather(*[
-            explain_issue(issue) for issue in unique_issues[:50]
+            explain_issue(issue, provider=request.provider, model=request.model)
+            for issue in unique_issues[:50]
         ])
         explanation_by_rule = {e.issue.rule_id: e for e in explanations_list}
 

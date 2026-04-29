@@ -509,19 +509,18 @@ body {
 /* Affected elements */
 .screenshot {
   max-width: 100%;
-  max-height: 160px;
   border: 1px solid var(--border);
   border-radius: 6px;
-  margin-bottom: 12px;
+  margin-bottom: 4px;
   display: block;
-  object-fit: cover;
-  object-position: top;
+  cursor: zoom-in;
+  transition: box-shadow 0.15s;
 }
+.screenshot:hover { box-shadow: 0 4px 20px rgba(13,27,75,0.15); }
 .screenshot-label {
   font-size: 10px;
   color: var(--muted);
-  margin-top: -8px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   font-style: italic;
 }
 
@@ -542,6 +541,34 @@ body {
 }
 .el-html:hover { background: #e4eeff; }
 .copy-hint { font-size: 9.5px; color: #a0b0cc; margin-top: 2px; }
+
+.el-actions { display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
+.el-btn {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--white);
+  color: var(--muted);
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.1s, color 0.1s;
+  white-space: nowrap;
+}
+.el-btn:hover { background: var(--blue-lt); color: var(--blue); border-color: #b0c8f0; }
+.el-selector {
+  font-family: "Consolas", monospace;
+  font-size: 10px;
+  color: #5a6a8a;
+  background: #f4f7ff;
+  border: 1px solid #e0e8ff;
+  border-radius: 4px;
+  padding: 3px 8px;
+  margin-top: 4px;
+  word-break: break-all;
+  display: none;
+}
+.el-selector.visible { display: block; }
 
 .show-more-btn {
   margin-top: 6px;
@@ -820,7 +847,14 @@ mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
                   <div class="el-html"
                        onclick="copyEl(this, '{{ sel.html | replace("'","&#39;") | replace("\\","\\\\") }}')"
                        title="Klicka för att kopiera HTML">{{ sel.html }}</div>
-                  <div class="copy-hint">Klicka för att kopiera</div>
+                  {% endif %}
+                  {% if sel.selector %}
+                  <div class="el-actions" data-selector="{{ sel.selector | e }}">
+                    <button class="el-btn" onclick="copySel(this)" title="Kopiera CSS-selektor">Kopiera selektor</button>
+                    <button class="el-btn" onclick="copyConsole(this)" title="Kopiera ett kommando att köra i webbläsarens konsol (F12)">Kopiera konsolkommando</button>
+                    <button class="el-btn" onclick="toggleSelector(this)" title="Visa CSS-selektor">Visa selektor</button>
+                  </div>
+                  <div class="el-selector">{{ sel.selector | e }}</div>
                   {% endif %}
                 </li>
                 {% endfor %}
@@ -862,7 +896,7 @@ mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
   </div>
 </div>
 
-<div class="toast" id="toast">Kopierat! ✓</div>
+<div class="toast" id="toast"></div>
 
 <script>
 let currentFilter = 'all';
@@ -1051,10 +1085,34 @@ function copyEl(el, text) {
   navigator.clipboard.writeText(decoded).then(() => {
     el.style.background = '#d4edff';
     setTimeout(() => el.style.background = '', 800);
-    const t = document.getElementById('toast');
-    t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 1800);
+    showToast('HTML kopierat! ✓');
   });
+}
+
+function copySel(btn) {
+  const sel = btn.closest('.el-actions').dataset.selector;
+  navigator.clipboard.writeText(sel).then(() => showToast('Selektor kopierad! ✓'));
+}
+
+function copyConsole(btn) {
+  const sel = btn.closest('.el-actions').dataset.selector;
+  const escaped = sel.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+  const snippet = `var el = document.querySelector('${escaped}'); if(el){ el.scrollIntoView({behavior:'smooth',block:'center'}); el.style.outline='3px solid #e53e3e'; el.style.outlineOffset='3px'; } else { console.warn('Element hittades inte:', '${escaped}'); }`;
+  navigator.clipboard.writeText(snippet).then(() => showToast('Konsolkommando kopierat — klistra in i F12-konsolen ✓'));
+}
+
+function toggleSelector(btn) {
+  const box = btn.closest('.el-item').querySelector('.el-selector');
+  if (!box) return;
+  const open = box.classList.toggle('visible');
+  btn.textContent = open ? 'Dölj selektor' : 'Visa selektor';
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
 }
 
 document.addEventListener('DOMContentLoaded', () => applyFilterAndSearch(0));

@@ -36,7 +36,16 @@ def _describe_element(selector: str, html: str) -> str:
     """Generate a short human-readable label from an element's selector and HTML."""
     h = (html or "").lower()
     if "<img" in h:
-        return "Bild utan alt-text"
+        # Försök visa en riktig src-URL (inte base64-data)
+        src = re.search(r'src=["\']([^"\']+)["\']', html or "")
+        if src:
+            val = src.group(1)
+            if not val.startswith("data:"):
+                filename = val.rstrip("/").split("/")[-1].split("?")[0]
+                return f"Bild: {filename[:60]}" if filename else f"Bild: {val[:60]}"
+        # Fallback: sista segmentet av CSS-selektorn (unikt per element)
+        last = (selector or "").split(">")[-1].strip()
+        return f"Bild ({last[:50]})" if last else "Bild utan alt-text"
     if "<a" in h:
         href = re.search(r'href=["\']([^"\']+)["\']', html or "")
         if href:
@@ -198,6 +207,7 @@ def _group_issues(items: List[ExplainedIssue]) -> list:
             groups[key]["selectors"].append({
                 "label": _describe_element(item.issue.selector, item.issue.affected_html),
                 "html": str(html_escape(_truncate_html(item.issue.affected_html))),
+                "selector": item.issue.selector,
             })
     return list(groups.values())
 
