@@ -349,8 +349,10 @@
     saveBtn.onclick = () => {
       const iframe = document.getElementById('report-frame');
       if (!iframe || !iframe.contentWindow) return;
-      iframe.contentWindow.postMessage('printReport', '*');
+      iframe.contentWindow.printReport();
     };
+
+
   </script>
 </body>
 </html>
