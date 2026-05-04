@@ -346,6 +346,7 @@ def _group_issues(items: List[ExplainedIssue]) -> list:
                 "label": _describe_element(item.issue.selector, item.issue.affected_html, item.issue.rule_id, el_index),
                 "html": str(html_escape(_truncate_html(item.issue.affected_html))),
                 "selector": item.issue.selector,
+                "source_url": item.issue.source_url or "",
                 # För bildregler: individuell AI-bedömning per element
                 "vision_fix": _md_to_html(item.suggested_fix) if is_image_rule else "",
             })

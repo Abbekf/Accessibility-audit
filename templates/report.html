@@ -1255,6 +1255,11 @@ mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
                     data-el-key="{{ el_key }}"
                     {% if loop.index > 5 %}style="display:none"{% endif %}>
                   <div class="el-label">{{ sel.label }}</div>
+                  {% if sel.source_url %}
+                  <div style="font-size:10px; color:#1a4db5; background:#eaf2ff; border:1px solid #c8deff; border-radius:4px; padding:1px 7px; display:inline-block; margin-bottom:3px; word-break:break-all;">
+                    🔗 {{ sel.source_url }}
+                  </div>
+                  {% endif %}
                   {% if sel.selector %}
                   <div class="el-selector-inline">{{ sel.selector | e }}</div>
                   {% endif %}
