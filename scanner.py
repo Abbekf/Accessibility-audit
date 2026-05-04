@@ -46,6 +46,7 @@ class A11yIssue(BaseModel):
     affected_html: str     # Den HTML-snutt som är felaktig
     selector: str          # CSS-selektor så man kan hitta elementet
     screenshot_b64: str = ""  # Base64-kodad skärmdump av elementet (om tillgänglig)
+    source_url: str = ""   # Vilken sida problemet hittades på (används vid sajt-scan)
 
 
 async def scan_url(url: str) -> tuple[List[A11yIssue], str]:
@@ -154,6 +155,7 @@ async def _scan_url_async(url: str) -> List[A11yIssue]:
                     affected_html=node.get("html", ""),
                     selector=", ".join(node.get("target", [])),
                     screenshot_b64=screenshot_b64,
+                    source_url=url,
                 ))
 
         site_logo_b64 = await _fetch_site_logo(page)

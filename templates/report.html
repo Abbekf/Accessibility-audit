@@ -613,6 +613,34 @@ body {
 .el-html-hidden:hover { background: #e4eeff; }
 .copy-hint { font-size: 9.5px; color: #a0b0cc; margin-top: 2px; }
 
+.el-page-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--blue);
+  border-radius: 5px;
+  padding: 3px 10px;
+  margin: 4px 0 6px;
+  text-decoration: none;
+  transition: background 0.12s;
+  max-width: 100%;
+}
+.el-page-link:hover { background: #1338a0; }
+.el-page-url {
+  font-weight: 400;
+  font-size: 10.5px;
+  opacity: 0.85;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 340px;
+  display: inline-block;
+  vertical-align: middle;
+}
+
 .vision-fix {
   font-size: 11.5px;
   background: #f0f7ff;
@@ -815,6 +843,116 @@ mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
 }
 .search-empty .icon { font-size: 32px; margin-bottom: 10px; }
 
+/* ── Donut chart ── */
+.sb-donut-wrap {
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.sb-donut { flex-shrink: 0; }
+.sb-donut-legend { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+.sb-dl-row { display: flex; align-items: center; gap: 7px; font-size: 11px; }
+.sb-dl-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.sb-dl-label { color: #8aaae0; flex: 1; }
+.sb-dl-num { font-weight: 700; color: #fff; }
+.sb-dl-pct { font-size: 9.5px; color: #4a6080; }
+
+/* ── Intro hero ── */
+.intro-hero {
+  background: linear-gradient(135deg, var(--navy) 0%, #162660 100%);
+  border-radius: var(--radius);
+  padding: 24px 28px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+.intro-hero::after {
+  content: '';
+  position: absolute;
+  right: -40px; top: -40px;
+  width: 200px; height: 200px;
+  border-radius: 50%;
+  background: rgba(126,170,255,0.07);
+  pointer-events: none;
+}
+.intro-hero-text { flex: 1; min-width: 0; }
+.intro-hero-eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #7eaaff;
+  margin-bottom: 6px;
+}
+.intro-hero-title {
+  font-size: 20px;
+  font-weight: 800;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.intro-hero-url {
+  font-size: 12px;
+  color: rgba(255,255,255,0.55);
+  word-break: break-all;
+  line-height: 1.4;
+  margin-bottom: 12px;
+}
+.intro-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.intro-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.15);
+  color: #fff;
+}
+.ic-critical { border-color: rgba(192,57,43,0.6); background: rgba(192,57,43,0.18); }
+.ic-serious  { border-color: rgba(224,90,0,0.6);  background: rgba(224,90,0,0.18); }
+.ic-moderate { border-color: rgba(212,160,23,0.6);background: rgba(212,160,23,0.18); }
+.ic-minor    { border-color: rgba(90,106,122,0.6); background: rgba(90,106,122,0.18); }
+.intro-hero-svg { flex-shrink: 0; }
+
+/* ── Category description ── */
+.cat-desc {
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-top: 2px;
+  line-height: 1.5;
+  max-width: 640px;
+}
+
+/* ── User groups ── */
+.user-groups { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
+.user-group-pill {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: #eef4ff;
+  color: #1a4db5;
+  border: 1px solid #d0e0ff;
+}
+
+/* ── Issue card improvements ── */
+.card-desc {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin-top: 4px;
+  margin-bottom: 6px;
+}
+
 /* ── Print / PDF ── */
 @media print {
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
@@ -910,6 +1048,50 @@ mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
     </div>
 
     {% set total = count_by_impact.critical + count_by_impact.serious + count_by_impact.moderate + count_by_impact.minor %}
+
+    <!-- Donut chart -->
+    {% if total > 0 %}
+    <div class="sb-donut-wrap">
+      {% set circ = 226.2 %}
+      {% set r = 36 %}
+      {% set offset_ns = namespace(val=0.0) %}
+      <svg class="sb-donut" width="84" height="84" viewBox="0 0 84 84">
+        <circle cx="42" cy="42" r="{{ r }}" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="11"/>
+        {% for impact, color in [
+            ('critical', '#c0392b'),
+            ('serious',  '#e05a00'),
+            ('moderate', '#d4a017'),
+            ('minor',    '#5a6a7a')
+        ] %}
+          {% set cnt = count_by_impact[impact] %}
+          {% if cnt > 0 %}
+            {% set seg = (cnt / total * circ)|round(2) %}
+            <circle cx="42" cy="42" r="{{ r }}" fill="none" stroke="{{ color }}" stroke-width="11"
+              stroke-dasharray="{{ seg }} {{ circ }}"
+              stroke-dashoffset="{{ (-offset_ns.val + circ * 0.25)|round(2) }}"
+              transform="rotate(-90 42 42)"/>
+            {% set offset_ns.val = offset_ns.val + seg %}
+          {% endif %}
+        {% endfor %}
+        <text x="42" y="38" text-anchor="middle" font-size="15" font-weight="800" fill="#fff">{{ total }}</text>
+        <text x="42" y="52" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.45)" letter-spacing="0.5">problem</text>
+      </svg>
+      <div class="sb-donut-legend">
+        {% for imp, lbl in [('critical','Kritiska'),('serious','Allvarliga'),('moderate','Måttliga'),('minor','Mindre')] %}
+        {% set cnt = count_by_impact[imp] %}
+        {% if cnt > 0 %}
+        <div class="sb-dl-row">
+          <span class="sb-dl-dot d-{{ imp }}"></span>
+          <span class="sb-dl-label">{{ lbl }}</span>
+          <span class="sb-dl-num">{{ cnt }}</span>
+          <span class="sb-dl-pct">{{ ((cnt / total * 100)|int) }}%</span>
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
     <div class="sb-summary">
       <div class="sb-summary-title">Totalt {{ total }} problem</div>
       {% for sev, label, cls in [
@@ -989,6 +1171,11 @@ mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
 
       <span class="topbar-count" id="topbar-count"></span>
 
+      <div style="display:flex; gap:5px; flex-shrink:0;">
+        <button class="fbtn" onclick="expandAllVisible()" title="Expandera alla synliga kort">Expandera alla</button>
+        <button class="fbtn" onclick="collapseAllVisible()" title="Kollapsa alla synliga kort">Kollapsa alla</button>
+      </div>
+
       <div class="filter-row">
         <button class="fbtn on"  onclick="setFilter('all',      this)">Alla</button>
         <button class="fbtn fc"  onclick="setFilter('critical', this)">Kritiska</button>
@@ -1001,6 +1188,27 @@ mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
     </div>
 
     <div class="content" id="content">
+
+      <!-- Intro hero -->
+      {% set total = count_by_impact.critical + count_by_impact.serious + count_by_impact.moderate + count_by_impact.minor %}
+      <div class="intro-hero">
+        <div class="intro-hero-text">
+          <div class="intro-hero-eyebrow">WCAG 2.2 · Tillgänglighetsrapport · {{ scan_date }}</div>
+          <div class="intro-hero-title">{{ site_name }}</div>
+          <div class="intro-hero-url">{{ url }}</div>
+          <div class="intro-chips">
+            {% if count_by_impact.critical > 0 %}<span class="intro-chip ic-critical">🔴 {{ count_by_impact.critical }} kritiska</span>{% endif %}
+            {% if count_by_impact.serious  > 0 %}<span class="intro-chip ic-serious">🟠 {{ count_by_impact.serious }} allvarliga</span>{% endif %}
+            {% if count_by_impact.moderate > 0 %}<span class="intro-chip ic-moderate">🟡 {{ count_by_impact.moderate }} måttliga</span>{% endif %}
+            {% if count_by_impact.minor    > 0 %}<span class="intro-chip ic-minor">⚪ {{ count_by_impact.minor }} mindre</span>{% endif %}
+          </div>
+        </div>
+        <svg class="intro-hero-svg" width="64" height="64" viewBox="0 0 64 64" opacity="0.25">
+          <circle cx="32" cy="32" r="28" fill="none" stroke="#7eaaff" stroke-width="2"/>
+          <path d="M32 12 L32 32 L46 46" fill="none" stroke="#7eaaff" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="32" cy="32" r="3" fill="#7eaaff"/>
+        </svg>
+      </div>
 
       <!-- Print header (dold i normalläge, visas vid utskrift) -->
       <div class="print-header">
@@ -1038,13 +1246,46 @@ mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
         <p>Prova ett annat sökord eller rensa sökningen.</p>
       </div>
 
+      {% set CAT_DESC = {
+        'Störande':           'Automatiskt innehåll kan störa eller skada användare med epilepsi eller kognitiva nedsättningar.',
+        'Struktur':           'Sidans uppbyggnad, rubriker och landmärken hjälper skärmläsare att förstå och navigera sidan.',
+        'Tangentbord':        'Alla funktioner ska kunna nås utan mus – avgörande för motoriknedsatta och tangentbordsanvändare.',
+        'Storlek & Skärm':    'Klickyta och zoom-möjligheter är kritiska för motoriknedsättning och synskada.',
+        'Färg & Form':        'Kontrasten och färganvändningen påverkar läsbarheten för synskadade och färgblinda användare.',
+        'Bilder, Ljud & Video': 'Alternativa textbeskrivningar för bilder och media som skärmläsare kan tolka och läsa upp.',
+        'Formulär':           'Korrekt märkta fält hjälper alla användare att fylla i formulär, särskilt med hjälpmedel.',
+        'Kod':                'ARIA-attribut och HTML-semantik som tolkas av skärmläsare, tangentbord och andra hjälpmedel.',
+        'Övrigt':             'Problem som inte passar in i övriga kategorier men ändå kan påverka tillgängligheten.',
+      } %}
+
+      {% set CAT_USERS = {
+        'Störande':           ['Epilepsi', 'Kognitiva nedsättningar'],
+        'Struktur':           ['Skärmläsare', 'Tangentbordsnavigation'],
+        'Tangentbord':        ['Motoriknedsättning', 'Tangentbordsanvändare'],
+        'Storlek & Skärm':    ['Motoriknedsättning', 'Synskada', 'Mobil'],
+        'Färg & Form':        ['Synskada', 'Färgblindhet', 'Nedsatt syn'],
+        'Bilder, Ljud & Video': ['Synskada', 'Hörselnedsättning', 'Skärmläsare'],
+        'Formulär':           ['Skärmläsare', 'Kognitiva nedsättningar'],
+        'Kod':                ['Skärmläsare', 'Hjälpmedel'],
+        'Övrigt':             ['Varierar'],
+      } %}
+
       {% for cat in digg_groups %}
       <div class="cat-view" id="cat-{{ loop.index0 }}"
            style="{{ '' if loop.first else 'display:none' }}">
 
-        <div class="cat-header">
-          <span class="cat-icon">{{ cat.icon }}</span>
-          <span class="cat-title">{{ cat.category }}</span>
+        <div class="cat-header" style="flex-wrap:wrap; row-gap:4px;">
+          <span class="cat-icon" style="font-size:24px;">{{ cat.icon }}</span>
+          <div style="flex:1; min-width:0;">
+            <span class="cat-title">{{ cat.category }}</span>
+            <div class="cat-desc">{{ CAT_DESC.get(cat.category, '') }}</div>
+            {% set users = CAT_USERS.get(cat.category, []) %}
+            {% if users %}
+            <div class="user-groups">
+              {% for u in users %}<span class="user-group-pill">{{ u }}</span>{% endfor %}
+            </div>
+            {% endif %}
+          </div>
           <span class="cat-meta">{{ cat.issues|length }} problem</span>
           <div class="cat-actions">
             <button class="cat-action-btn" onclick="expandAll({{ loop.index0 }})">Expandera alla</button>
@@ -1070,7 +1311,7 @@ mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
                 <span class="chevron">▼</span>
               </span>
             </div>
-            <div class="card-title-row">{{ issue.plain_swedish | striptags }}</div>
+            <div class="card-title-row">{{ issue.plain_swedish | striptags | truncate(120) }}</div>
             {% if issue.selectors %}
             <div class="card-preview">
               {% for sel in issue.selectors[:2] %}
@@ -1091,7 +1332,9 @@ mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
           <div class="card-body">
             <!-- Left: fix -->
             <div class="card-panel">
-              <div class="panel-label">Problem &amp; åtgärd</div>
+              <div class="panel-label">Vad det innebär</div>
+              <div class="fix-body" style="margin-bottom:14px; color: var(--muted);">{{ issue.plain_swedish | striptags | truncate(400) }}</div>
+              <div class="panel-label">Förslag på åtgärd</div>
               <div class="fix-body">{{ issue.suggested_fix | safe }}</div>
 
               {% if issue.confidence == "low" %}
@@ -1129,6 +1372,11 @@ mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
                     data-el-key="{{ el_key }}"
                     {% if loop.index > 5 %}style="display:none"{% endif %}>
                   <div class="el-label">{{ sel.label }}</div>
+                  {% if sel.source_url %}
+                  <a class="el-page-link" href="{{ sel.source_url }}" target="_blank" rel="noopener">
+                    🌐 Öppna sidan &rarr; <span class="el-page-url">{{ sel.source_url }}</span>
+                  </a>
+                  {% endif %}
                   {% if sel.selector %}
                   <div class="el-selector-inline">{{ sel.selector | e }}</div>
                   {% endif %}
@@ -1530,6 +1778,16 @@ function collapseAll(idx) {
   view.querySelectorAll('.issue-card').forEach(c => c.classList.remove('open'));
 }
 
+function expandAllVisible() {
+  document.querySelectorAll('.issue-card').forEach(c => {
+    if (c.style.display !== 'none') c.classList.add('open');
+  });
+}
+
+function collapseAllVisible() {
+  document.querySelectorAll('.issue-card').forEach(c => c.classList.remove('open'));
+}
+
 function dashFilter(impact, card) {
   const isActive = card.classList.contains('active-filter');
   document.querySelectorAll('.dash-card').forEach(c => c.classList.remove('active-filter'));
@@ -1544,15 +1802,16 @@ function dashFilter(impact, card) {
   if (fbtn) fbtn.classList.add('on');
 
   if (targetImpact === 'all') {
-    // Restore single-category view
     document.getElementById('dashboard') && (document.getElementById('dashboard').style.display = '');
-    document.querySelectorAll('.cat-view').forEach((v, i) => {
-      v.style.display = i === currentCatIdx ? '' : 'none';
+    document.querySelectorAll('.cat-view').forEach(v => v.style.display = '');
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.querySelectorAll('.issue-card').forEach(c => {
+      c.style.display = c.dataset.hiddenByStatus === '1' ? 'none' : '';
     });
-    document.querySelectorAll('.nav-item').forEach((n, i) => {
-      n.classList.toggle('active', i === currentCatIdx);
-    });
-    applyFilterAndSearch(currentCatIdx);
+    document.querySelectorAll('[id^="no-results-"]').forEach(el => el.style.display = 'none');
+    const allVisible = document.querySelectorAll('.issue-card:not([style*="display: none"])').length;
+    const countEl = document.getElementById('topbar-count');
+    if (countEl) countEl.textContent = `${allVisible} problem`;
     return;
   }
 
@@ -1602,13 +1861,16 @@ function setFilter(impact, btn) {
 
   if (impact === 'all') {
     document.getElementById('dashboard') && (document.getElementById('dashboard').style.display = '');
-    document.querySelectorAll('.cat-view').forEach((v, i) => {
-      v.style.display = i === currentCatIdx ? '' : 'none';
+    // Visa alla kategorier och alla kort
+    document.querySelectorAll('.cat-view').forEach(v => v.style.display = '');
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.querySelectorAll('.issue-card').forEach(c => {
+      c.style.display = c.dataset.hiddenByStatus === '1' ? 'none' : '';
     });
-    document.querySelectorAll('.nav-item').forEach((n, i) => {
-      n.classList.toggle('active', i === currentCatIdx);
-    });
-    applyFilterAndSearch(currentCatIdx);
+    document.querySelectorAll('[id^="no-results-"]').forEach(el => el.style.display = 'none');
+    const allVisible = document.querySelectorAll('.issue-card:not([style*="display: none"])').length;
+    const countEl = document.getElementById('topbar-count');
+    if (countEl) countEl.textContent = `${allVisible} problem`;
     return;
   }
 
@@ -1828,6 +2090,11 @@ function printReport() {
     c.classList.remove('open');
   });
 }
+
+window.addEventListener('message', (e) => {
+  if (e.data === 'printReport') printReport();
+});
+
 
 document.addEventListener('DOMContentLoaded', () => {
   restoreStatuses();
