@@ -1678,6 +1678,34 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2200);
 }
 
+function printReport() {
+  // Temporarily show all cards (including wontfix/fixed that are filtered out)
+  const hiddenCards = document.querySelectorAll('.issue-card[data-hidden-by-status="1"]');
+  hiddenCards.forEach(c => c.style.display = '');
+
+  // Show all categories
+  document.querySelectorAll('.issue-category').forEach(cat => cat.style.display = '');
+
+  // Open all cards
+  document.querySelectorAll('.issue-card').forEach(card => {
+    card.style.display = '';
+    const body = card.querySelector('.card-body');
+    if (body) body.style.display = '';
+  });
+
+  window.print();
+
+  // Restore hidden cards
+  hiddenCards.forEach(c => c.style.display = 'none');
+
+  // Re-apply filter to restore view
+  applyFilterAndSearch(0);
+}
+
+window.addEventListener('message', (e) => {
+  if (e.data === 'printReport') printReport();
+});
+
 document.addEventListener('DOMContentLoaded', () => {
   restoreStatuses();
   restoreElStatuses();

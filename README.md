@@ -12,7 +12,7 @@ Användare  →  FastAPI  →  Playwright + axe-core (hittar fel)
                               ↓
                          OpenAI / Claude / Gemini (förklarar på svenska, ENDAST från källan)
                               ↓
-                         HTML-rapport med citations och konsolverktyg
+                         Interaktiv HTML-rapport med statushantering och PDF-export
 ```
 
 - **axe-core** hittar tekniska fel (fakta, inte AI)
@@ -93,13 +93,14 @@ Eller via curl:
 ```bash
 curl -X POST http://localhost:8000/scan \
      -H "Content-Type: application/json" \
-     -d '{"url": "https://www.delorean.se", "provider": "openai", "model": "gpt-4o"}' \
+     -d '{"url": "https://www.delorean.se", "provider": "claude", "model": "claude-haiku-4-5-20251001"}' \
      --output rapport.html
 ```
 
 ## Välja LLM i gränssnittet
 
 I headern finns två dropdowns: **leverantör** och **modell**.
+Standardvalet är **Claude Haiku 4.5** — snabb och kostnadseffektiv för de flesta granskningar.
 
 | Leverantör | Tillgängliga modeller |
 |------------|----------------------|
@@ -107,8 +108,8 @@ I headern finns två dropdowns: **leverantör** och **modell**.
 | Claude | Claude Sonnet 4.6, Claude Opus 4.7, Claude Haiku 4.5 |
 | Gemini | Gemini 2.5 Flash, Gemini 2.5 Pro, Gemini 2.0 Flash |
 
-**Rekommendation:** Claude Sonnet 4.6 eller GPT-4o ger bäst balans mellan kvalitet och kostnad.
-Claude Haiku 4.5 och GPT-4o mini är snabbare och billigare men lika användbara för de flesta fel.
+**Rekommendation:** Claude Haiku 4.5 eller GPT-4o mini är snabba och billiga och fungerar bra för de flesta fel.
+Claude Sonnet 4.6 eller GPT-4o ger djupare förklaringar och bättre kodexempel.
 
 ## Vad RAG tillför
 
@@ -124,17 +125,43 @@ som slår upp i lagboken.
 
 ## Vad rapporten innehåller
 
+- **Dashboard** — sammanfattning med antal fel per allvarlighetsnivå och en framstegsindikator
 - **Kategorisering** enligt DIGG:s kategorier (Bilder, Formulär, Tangentbord, etc.)
-- **Allvarlighetsnivå** (Critical, Serious, Moderate, Minor)
+- **Allvarlighetsnivå** (Kritisk, Allvarlig, Måttlig, Liten)
 - **AI-förklaring** på svenska med källhänvisning till WCAG/EAA
 - **Konkret åtgärdsförslag** med kodexempel
 - **Kontextskärmdump** — visar elementet markerat med röd ram i sin omgivning på sidan
+- **Vision-analys för bilder** — AI:n bedömer om bilden är dekorativ eller innehållsbärande och föreslår en konkret alt-text
 - **Kopiera selektor** — CSS-selektor för att hitta elementet i DevTools
 - **Kopiera konsolkommando** — ett JS-kommando att köra i F12-konsolen som scrollar till och markerar elementet direkt på sidan
 
+### Statushantering
+
+Varje fel och varje enskilt element kan markeras med en av tre statusar:
+
+| Status | Meaning |
+|--------|---------|
+| *(ingen)* | Ännu inte åtgärdat |
+| ✅ Åtgärdad | Problemet är fixat |
+| 🚫 Ej relevant | Medvetet val att inte åtgärda |
+
+Statusarna sparas automatiskt i webbläsaren (localStorage) per granskad URL,
+och kvarstår även om sidan laddas om.
+
+Dashboarden och sidomenyn uppdateras i realtid när du markerar fel — t.ex.
+"29 / 30" visar hur många som är kvar av det ursprungliga antalet.
+
+### PDF-export
+
+Klicka **Skapa rapport** i headern för att öppna webbläsarens utskriftsdialog.
+Välj "Spara som PDF" för att exportera hela rapporten.
+
+Rapporten i PDF-format visar alla fel inklusive de markerade som åtgärdade
+och ej relevanta, med tydliga statusbadgar för varje.
+
 ### Hitta ett fel direkt på sidan
 
-Varje element i rapporten har tre knappar som hjälper dig lokalisera felet:
+Varje element i rapporten har knappar som hjälper dig lokalisera felet:
 
 #### Kopiera selektor
 Kopierar en CSS-selektor som unikt identifierar elementet, t.ex. `div.hero > img:nth-child(2)`.
@@ -169,12 +196,11 @@ Kopierar ett JavaScript-kommando som scrollar till elementet och ritar en röd r
 - `reporter.py` — Genererar HTML-rapport med kategorisering och utvecklarverktyg
 - `main.py` — FastAPI-server som binder ihop allt
 - `ui.html` — Webbaserat gränssnitt med LLM-väljare
-- `templates/report.html` — Mallen för HTML-rapporten
+- `templates/report.html` — Mallen för den interaktiva HTML-rapporten
 - `chroma_db/` — Vektordatabasen (skapas av indexer.py)
 
 ## Vad är nästa steg?
 
 - [ ] Crawla flera sidor per sajt, inte bara startsidan
-- [ ] Bild-alt-förslag baserat på faktiskt bildinnehåll (vision-modell)
 - [ ] Databas för historik och trendanalys
 - [ ] Kontinuerlig övervakning (schemalagd scanning)

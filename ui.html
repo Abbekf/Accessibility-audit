@@ -49,7 +49,7 @@
       min-width: 260px;
       gap: 8px;
     }
-    .scan-form input[type="url"] {
+    .scan-form input[type="text"] {
       flex: 1;
       padding: 8px 14px;
       font-size: 13px;
@@ -60,8 +60,8 @@
       outline: none;
       transition: border-color 0.15s, background 0.15s;
     }
-    .scan-form input[type="url"]::placeholder { color: rgba(255,255,255,0.45); }
-    .scan-form input[type="url"]:focus {
+    .scan-form input[type="text"]::placeholder { color: rgba(255,255,255,0.45); }
+    .scan-form input[type="text"]:focus {
       border-color: #7eaaff;
       background: rgba(255,255,255,0.15);
     }
@@ -202,7 +202,7 @@
       <div class="header-brand">Tillgänglighets<span>revisor</span></div>
 
       <form class="scan-form" id="scan-form">
-        <input type="url" id="url" placeholder="https://www.exempel.se" required autocomplete="off">
+        <input type="text" id="url" placeholder="www.exempel.se" required autocomplete="off">
         <button type="submit" id="scan-btn">Starta granskning</button>
       </form>
 
@@ -216,13 +216,8 @@
       </div>
 
       <div class="header-actions" id="header-actions" style="display:none;">
-        <button id="save-btn">Spara</button>
+        <button id="save-btn">📄 Skapa rapport</button>
       </div>
-
-      <label class="open-btn" title="Öppna en sparad rapport">
-        Öppna rapport
-        <input type="file" id="open-file" accept=".html" style="display:none">
-      </label>
 
       <div class="status-bar" id="status"></div>
     </header>
@@ -289,7 +284,6 @@
     const emptyState  = document.getElementById('empty-state');
     const actions     = document.getElementById('header-actions');
     const saveBtn     = document.getElementById('save-btn');
-    const openFile    = document.getElementById('open-file');
 
     let lastBlob    = null;
     let lastBlobUrl = null;
@@ -317,7 +311,8 @@
 
     form.onsubmit = async (e) => {
       e.preventDefault();
-      const url = document.getElementById('url').value;
+      let url = document.getElementById('url').value.trim();
+      if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
       document.getElementById('scan-btn').disabled = true;
       statusEl.style.display = 'block';
       statusEl.className = 'status-bar';
@@ -352,25 +347,9 @@
     };
 
     saveBtn.onclick = () => {
-      if (!lastBlob) return;
-      const slug = (lastUrl || 'rapport').replace(/https?:\/\//, '').replace(/\W+/g, '-').replace(/-+$/, '');
-      const filename = `rapport-${slug}.html`;
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(lastBlob);
-      a.download = filename;
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-    };
-
-    openFile.onchange = (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const url = URL.createObjectURL(file);
-      frame.src = url;
-      showReport();
-      actions.style.display = 'none';
-      statusEl.textContent = `Öppnad: ${file.name}`;
-      openFile.value = '';
+      const iframe = document.getElementById('report-frame');
+      if (!iframe || !iframe.contentWindow) return;
+      iframe.contentWindow.postMessage('printReport', '*');
     };
   </script>
 </body>
