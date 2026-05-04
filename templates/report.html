@@ -952,6 +952,87 @@ mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
   margin-top: 4px;
   margin-bottom: 6px;
 }
+
+/* ── Print / PDF ── */
+@media print {
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+
+  .sidebar, .topbar, .disclaimer, .toast,
+  .status-bar, .el-actions, .el-selector,
+  .el-html-hidden, .show-more-btn,
+  .cat-actions, .print-btn { display: none !important; }
+
+  body { background: #fff; font-size: 12px; }
+  .layout { display: block; }
+  .main { display: block; }
+  .content { padding: 0; max-width: 100%; }
+
+  /* Visa alla kategorier och kort */
+  .cat-view { display: block !important; page-break-inside: avoid; margin-bottom: 20px; }
+  .issue-card { display: block !important; page-break-inside: avoid; margin-bottom: 10px; box-shadow: none; }
+
+  /* Öppna alla kort */
+  .card-body { display: grid !important; grid-template-columns: 1fr 1fr; border-top: 1px solid #ddd; }
+
+  /* Dölj element-extra */
+  .el-extra { display: list-item !important; }
+
+  /* Print-header */
+  .print-header {
+    display: block !important;
+    padding: 20px 0 16px;
+    border-bottom: 3px solid #0d1b4b;
+    margin-bottom: 20px;
+  }
+  .print-header h1 { font-size: 20px; color: #0d1b4b; margin-bottom: 4px; }
+  .print-header .print-meta { font-size: 11px; color: #666; margin-bottom: 12px; }
+  .print-summary-row {
+    display: flex !important;
+    gap: 16px;
+    margin-bottom: 4px;
+  }
+  .print-summary-chip {
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .psc-critical  { background: #fdf0ef; color: #c0392b; border: 1px solid #c0392b; }
+  .psc-serious   { background: #fff4ed; color: #e05a00; border: 1px solid #e05a00; }
+  .psc-moderate  { background: #fffbeb; color: #b8860b; border: 1px solid #b8860b; }
+  .psc-minor     { background: #f4f6f8; color: #5a6a7a; border: 1px solid #5a6a7a; }
+  .psc-done      { background: #ecfdf5; color: #15803d; border: 1px solid #86efac; }
+  .psc-wontfix   { background: #f5f5f5; color: #6b7280; border: 1px solid #d1d5db; }
+
+  /* Status i print */
+  .print-status-badge {
+    display: inline-block !important;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-left: 8px;
+  }
+  .psb-fixed   { background: #ecfdf5; color: #15803d; }
+  .psb-wontfix { background: #f5f5f5; color: #6b7280; }
+  .psb-open    { background: #fdf0ef; color: #c0392b; }
+
+  /* resolved-kort i print */
+  .issue-card.resolved-fixed   { border-left-color: #86efac !important; opacity: 1 !important; }
+  .issue-card.resolved-wontfix { border-left-color: #d1d5db !important; opacity: 1 !important; }
+  .issue-card.resolved-fixed .card-title-row,
+  .issue-card.resolved-wontfix .card-title-row { text-decoration: none !important; color: var(--text) !important; }
+
+  /* Dashboard göms, ersätts av print-header */
+  #dashboard { display: none !important; }
+  .search-empty { display: none !important; }
+
+  a { color: inherit; text-decoration: none; }
+}
+
+/* Print-header syns bara vid utskrift */
+.print-header { display: none; }
+.print-status-badge { display: none; }
 </style>
 </head>
 <body>
@@ -1102,6 +1183,7 @@ mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
         <button class="fbtn fm"  onclick="setFilter('moderate', this)">Måttliga</button>
         <button class="fbtn fi"  onclick="setFilter('minor',    this)">Mindre</button>
         <button class="fbtn" id="btn-resolved" onclick="toggleResolved(this)" title="Visa/dölj hanterade problem" style="margin-left:4px">Visa hanterade</button>
+        <button class="fbtn print-btn" onclick="printReport()" title="Skapa PDF-rapport" style="margin-left:8px;background:#1a4db5;color:#fff;border-color:#1a4db5">📄 Skapa rapport</button>
       </div>
     </div>
 
@@ -1128,6 +1210,13 @@ mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
         </svg>
       </div>
 
+      <!-- Print header (dold i normalläge, visas vid utskrift) -->
+      <div class="print-header">
+        <h1>Tillgänglighetsrapport — {{ url }}</h1>
+        <div class="print-meta">Granskad: {{ scan_date }} &nbsp;·&nbsp; Genererad av Tillgänglighetsrevisor (axe-core + AI)</div>
+        <div class="print-summary-row" id="print-summary-row"></div>
+      </div>
+
       <!-- Dashboard -->
       {% set total = count_by_impact.critical + count_by_impact.serious + count_by_impact.moderate + count_by_impact.minor %}
       {% if total > 0 %}
@@ -1140,7 +1229,7 @@ mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
         ] %}
         <div class="dash-card dc-{{ cls }}" onclick="dashFilter('{{ cls }}', this)" title="Filtrera på {{ label | lower }}"
              data-impact="{{ cls }}" data-total="{{ sev }}">
-          <div class="dash-num" id="dash-num-{{ cls }}">{{ sev }}</div>
+          <div class="dash-num" id="dash-num-{{ cls }}" data-orig="{{ sev }}">{{ sev }}</div>
           <div class="dash-label">{{ label }}</div>
           <div class="dash-bar-wrap">
             <div class="dash-bar" id="dash-bar-{{ cls }}" style="width:{{ ((sev / total * 100)|int) if total > 0 else 0 }}%"></div>
@@ -1941,32 +2030,71 @@ function showToast(msg) {
 }
 
 function printReport() {
-  // Temporarily show all cards (including wontfix/fixed that are filtered out)
-  const hiddenCards = document.querySelectorAll('.issue-card[data-hidden-by-status="1"]');
-  hiddenCards.forEach(c => c.style.display = '');
+  // Bygg print-summary
+  const impacts = [
+    { key: 'critical', label: 'Kritiska',   cls: 'psc-critical' },
+    { key: 'serious',  label: 'Allvarliga', cls: 'psc-serious'  },
+    { key: 'moderate', label: 'Måttliga',   cls: 'psc-moderate' },
+    { key: 'minor',    label: 'Mindre',     cls: 'psc-minor'    },
+  ];
+  const row = document.getElementById('print-summary-row');
+  if (row) {
+    row.innerHTML = '';
+    let totalFixed = 0, totalWontfix = 0;
+    impacts.forEach(({ key, label, cls }) => {
+      const el = document.getElementById('dash-num-' + key);
+      const orig = el ? parseInt(el.dataset.orig, 10) : 0;
 
-  // Show all categories
-  document.querySelectorAll('.issue-category').forEach(cat => cat.style.display = '');
+      // Kort-nivå: hela kortet markerat
+      const fixedCards   = document.querySelectorAll(`.issue-card[data-impact="${key}"].resolved-fixed`).length;
+      const wontfixCards = document.querySelectorAll(`.issue-card[data-impact="${key}"].resolved-wontfix`).length;
 
-  // Open all cards
-  document.querySelectorAll('.issue-card').forEach(card => {
-    card.style.display = '';
-    const body = card.querySelector('.card-body');
-    if (body) body.style.display = '';
-  });
+      // Element-nivå: enskilda element markerade (på kort som INTE är helmarkerade)
+      const fixedEls   = document.querySelectorAll(`.issue-card[data-impact="${key}"]:not(.resolved-fixed):not(.resolved-wontfix) .el-item.el-resolved-fixed`).length;
+      const wontfixEls = document.querySelectorAll(`.issue-card[data-impact="${key}"]:not(.resolved-fixed):not(.resolved-wontfix) .el-item.el-resolved-wontfix`).length;
+
+      const fixed   = fixedCards + fixedEls;
+      const wontfix = wontfixCards + wontfixEls;
+      const open    = Math.max(0, orig - fixed - wontfix);
+      totalFixed += fixed; totalWontfix += wontfix;
+      const chip = document.createElement('span');
+      chip.className = 'print-summary-chip ' + cls;
+      chip.textContent = `${label}: ${open} kvar av ${orig}`;
+      row.appendChild(chip);
+    });
+    const doneChip = document.createElement('span');
+    doneChip.className = 'print-summary-chip psc-done';
+    doneChip.textContent = `✅ Åtgärdade: ${totalFixed}`;
+    row.appendChild(doneChip);
+    const wontChip = document.createElement('span');
+    wontChip.className = 'print-summary-chip psc-wontfix';
+    wontChip.textContent = `🚫 Ej relevanta: ${totalWontfix}`;
+    row.appendChild(wontChip);
+  }
+
+  // Visa alla kategorier och kort tillfälligt
+  const catViews = document.querySelectorAll('.cat-view');
+  const prevDisplay = Array.from(catViews).map(v => v.style.display);
+  catViews.forEach(v => v.style.display = '');
+
+  const cards = document.querySelectorAll('.issue-card');
+  const prevCardDisplay = Array.from(cards).map(c => c.style.display);
+  cards.forEach(c => { c.style.display = ''; c.classList.add('open'); });
 
   window.print();
 
-  // Restore hidden cards
-  hiddenCards.forEach(c => c.style.display = 'none');
-
-  // Re-apply filter to restore view
-  applyFilterAndSearch(0);
+  // Återställ efter utskrift
+  catViews.forEach((v, i) => v.style.display = prevDisplay[i]);
+  cards.forEach((c, i) => {
+    c.style.display = prevCardDisplay[i];
+    c.classList.remove('open');
+  });
 }
 
 window.addEventListener('message', (e) => {
   if (e.data === 'printReport') printReport();
 });
+
 
 document.addEventListener('DOMContentLoaded', () => {
   restoreStatuses();
