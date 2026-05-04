@@ -16,6 +16,7 @@ Detta är garantin mot hallucinationer.
 """
 
 import os
+from pathlib import Path
 from openai import AsyncOpenAI
 from pydantic import BaseModel
 from typing import List
@@ -25,13 +26,67 @@ from scanner import A11yIssue
 from retriever import retrieve_relevant_laws, RetrievedChunk
 
 
-load_dotenv()
+PROJECT_ROOT = Path(__file__).resolve().parent
+ENV_PATHS = [
+    PROJECT_ROOT / ".env",
+    PROJECT_ROOT / "a11y-audit-rag" / "a11y-audit" / ".env",
+]
+for env_path in ENV_PATHS:
+    if env_path.exists():
+        load_dotenv(dotenv_path=env_path, override=False)
 
 _openai_key  = os.getenv("OPENAI_API_KEY", "")
 _claude_key  = os.getenv("ANTHROPIC_API_KEY", "")
 _gemini_key  = os.getenv("GEMINI_API_KEY", "")
 
 _openai_client = AsyncOpenAI(api_key=_openai_key) if _openai_key else None
+
+DEFAULT_MODEL_BY_PROVIDER = {
+    "openai": "gpt-4o",
+    "claude": "claude-haiku-4-5-20251001",
+    "gemini": "gemini-2.5-flash",
+}
+
+
+def _available_providers() -> list[str]:
+    providers: list[str] = []
+    if _openai_key:
+        providers.append("openai")
+    if _claude_key:
+        providers.append("claude")
+    if _gemini_key:
+        providers.append("gemini")
+    return providers
+
+
+def _resolve_provider_and_model(provider: str, model: str) -> tuple[str, str]:
+    """Väljer en fungerande provider och en kompatibel modell."""
+    requested = (provider or "").strip().lower() or "auto"
+    available = _available_providers()
+
+    if not available:
+        raise RuntimeError(
+            "Ingen AI-nyckel hittades. Sätt minst en av OPENAI_API_KEY, "
+            "ANTHROPIC_API_KEY eller GEMINI_API_KEY i .env."
+        )
+
+    if requested in ("openai", "claude", "gemini") and requested in available:
+        resolved_provider = requested
+        resolved_model = model or DEFAULT_MODEL_BY_PROVIDER[resolved_provider]
+        return resolved_provider, resolved_model
+
+    # Fallback-prioritet: Claude, Gemini, OpenAI.
+    for candidate in ("claude", "gemini", "openai"):
+        if candidate in available:
+            if requested in ("openai", "claude", "gemini") and requested != candidate:
+                print(
+                    f"[explainer] Varning: provider '{requested}' saknar nyckel. "
+                    f"Byter till '{candidate}'."
+                )
+            return candidate, DEFAULT_MODEL_BY_PROVIDER[candidate]
+
+    # Teoretiskt onåbar eftersom vi redan hanterat tom lista.
+    raise RuntimeError("Kunde inte välja en AI-provider.")
 
 
 class Citation(BaseModel):
@@ -118,12 +173,14 @@ RELEVANTA UTDRAG FRÅN WCAG / EAA:
 {"Se skärmdumpen av det berörda elementet bifogad nedan. Avgör om bilden verkar vara DEKORATIV (använd alt='') eller INNEHÅLLSBÄRANDE (föreslå en konkret alt-text baserad på vad du ser). Markera att det är din visuella bedömning." if use_vision else ""}
 Förklara problemet och föreslå en fix. Baserat ENDAST på utdragen ovan."""
 
-    if provider == "claude":
-        response_text = await _call_claude(model, user_prompt, screenshot_b64=issue.screenshot_b64 if use_vision else "")
-    elif provider == "gemini":
-        response_text = await _call_gemini(model, user_prompt, screenshot_b64=issue.screenshot_b64 if use_vision else "")
+    resolved_provider, resolved_model = _resolve_provider_and_model(provider, model)
+
+    if resolved_provider == "claude":
+        response_text = await _call_claude(resolved_model, user_prompt, screenshot_b64=issue.screenshot_b64 if use_vision else "")
+    elif resolved_provider == "gemini":
+        response_text = await _call_gemini(resolved_model, user_prompt, screenshot_b64=issue.screenshot_b64 if use_vision else "")
     else:
-        response_text = await _call_openai(model, user_prompt, screenshot_b64=issue.screenshot_b64 if use_vision else "")
+        response_text = await _call_openai(resolved_model, user_prompt, screenshot_b64=issue.screenshot_b64 if use_vision else "")
 
     explanation, fix, citations, confidence = _parse_response(response_text)
 

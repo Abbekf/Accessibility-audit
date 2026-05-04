@@ -46,8 +46,8 @@ class ScanRequest(BaseModel):
     Pydantic validerar automatiskt att URL:en är giltig.
     """
     url: HttpUrl
-    provider: str = "openai"
-    model: str = "gpt-4o"
+    provider: str = "auto"
+    model: str = ""
 
 
 # Färdig presentations-HTML per URL, genererad under /scan

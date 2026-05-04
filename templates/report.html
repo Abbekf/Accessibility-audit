@@ -613,6 +613,34 @@ body {
 .el-html-hidden:hover { background: #e4eeff; }
 .copy-hint { font-size: 9.5px; color: #a0b0cc; margin-top: 2px; }
 
+.el-page-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--blue);
+  border-radius: 5px;
+  padding: 3px 10px;
+  margin: 4px 0 6px;
+  text-decoration: none;
+  transition: background 0.12s;
+  max-width: 100%;
+}
+.el-page-link:hover { background: #1338a0; }
+.el-page-url {
+  font-weight: 400;
+  font-size: 10.5px;
+  opacity: 0.85;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 340px;
+  display: inline-block;
+  vertical-align: middle;
+}
+
 .vision-fix {
   font-size: 11.5px;
   background: #f0f7ff;
@@ -1256,9 +1284,9 @@ mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
                     {% if loop.index > 5 %}style="display:none"{% endif %}>
                   <div class="el-label">{{ sel.label }}</div>
                   {% if sel.source_url %}
-                  <div style="font-size:10px; color:#1a4db5; background:#eaf2ff; border:1px solid #c8deff; border-radius:4px; padding:1px 7px; display:inline-block; margin-bottom:3px; word-break:break-all;">
-                    🔗 {{ sel.source_url }}
-                  </div>
+                  <a class="el-page-link" href="{{ sel.source_url }}" target="_blank" rel="noopener">
+                    🌐 Öppna sidan &rarr; <span class="el-page-url">{{ sel.source_url }}</span>
+                  </a>
                   {% endif %}
                   {% if sel.selector %}
                   <div class="el-selector-inline">{{ sel.selector | e }}</div>

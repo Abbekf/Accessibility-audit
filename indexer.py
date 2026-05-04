@@ -33,7 +33,14 @@ from dotenv import load_dotenv
 from openai import OpenAI
 
 
-load_dotenv()
+PROJECT_ROOT = Path(__file__).resolve().parent
+ENV_PATHS = [
+    PROJECT_ROOT / ".env",
+    PROJECT_ROOT / "a11y-audit-rag" / "a11y-audit" / ".env",
+]
+for env_path in ENV_PATHS:
+    if env_path.exists():
+        load_dotenv(dotenv_path=env_path, override=False)
 
 _openai_key = os.getenv("OPENAI_API_KEY")
 if not _openai_key or _openai_key == "din-openai-nyckel-här":
