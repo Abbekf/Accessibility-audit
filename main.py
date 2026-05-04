@@ -28,7 +28,7 @@ from pathlib import Path
 
 from scanner import scan_url
 from explainer import explain_issue
-from reporter import generate_html
+from reporter import generate_html, generate_presentation_html
 from favicon_route import router as favicon_router
 
 
@@ -47,6 +47,10 @@ class ScanRequest(BaseModel):
     url: HttpUrl
     provider: str = "openai"
     model: str = "gpt-4o"
+
+
+# Färdig presentations-HTML per URL, genererad under /scan
+_presentation_cache: dict = {}  # {url_str: str}
 
 
 
@@ -120,8 +124,11 @@ async def scan(request: ScanRequest) -> Response:
                     retrieved_chunks=template.retrieved_chunks,
                 ))
 
-        # Steg 3: Generera HTML-rapport
-        html_content = generate_html(url_str, list(explained), site_logo_b64=site_logo_b64)
+        # Steg 3: Generera rapport och pre-generera presentation
+        explained_list = list(explained)
+        _presentation_cache[url_str] = generate_presentation_html(url_str, explained_list)
+
+        html_content = generate_html(url_str, explained_list, site_logo_b64=site_logo_b64)
 
         filename = f"a11y-rapport-{url_str.replace('https://', '').replace('/', '-')}.html"
         return Response(
@@ -134,3 +141,21 @@ async def scan(request: ScanRequest) -> Response:
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Fel under granskning: {e}")
+
+
+@app.post("/presentation")
+async def presentation(request: ScanRequest) -> Response:
+    """Returnerar den pre-genererade presentationen från senaste skanningen."""
+    url_str = str(request.url)
+    html_content = _presentation_cache.get(url_str)
+    if not html_content:
+        raise HTTPException(
+            status_code=404,
+            detail="Ingen presentation hittades. Kör en granskning först."
+        )
+    filename = f"presentation-{url_str.replace('https://', '').replace('/', '-')}.html"
+    return Response(
+        content=html_content.encode("utf-8"),
+        media_type="text/html; charset=utf-8",
+        headers={"Content-Disposition": f'inline; filename="{filename}"'},
+    )

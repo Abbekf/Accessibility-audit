@@ -369,6 +369,33 @@ def _group_by_digg(groups: list) -> list:
     return result
 
 
+def generate_presentation_html(url: str, items: List[ExplainedIssue]) -> str:
+    """Genererar en slide-presentation i HTML-format."""
+    count_by_impact = {
+        "critical": sum(1 for i in items if i.issue.impact == "critical"),
+        "serious":  sum(1 for i in items if i.issue.impact == "serious"),
+        "moderate": sum(1 for i in items if i.issue.impact == "moderate"),
+        "minor":    sum(1 for i in items if i.issue.impact == "minor"),
+    }
+    grouped = _group_issues(items)
+    digg_groups = _group_by_digg(grouped)
+
+    from urllib.parse import urlparse
+    site_name = urlparse(url).netloc.replace("www.", "").split(".")[0].capitalize()
+
+    template = _jinja_env.get_template("presentation.html")
+    return template.render(
+        url=url,
+        site_name=site_name,
+        scan_date=datetime.now().strftime("%Y-%m-%d %H:%M"),
+        digg_groups=digg_groups,
+        total_issues=len(items),
+        unique_rules=len(grouped),
+        num_categories=len(digg_groups),
+        count_by_impact=count_by_impact,
+    )
+
+
 def generate_html(url: str, items: List[ExplainedIssue], site_logo_b64: str = "") -> str:
     """
     Genererar en interaktiv HTML-rapport och returnerar den som sträng.

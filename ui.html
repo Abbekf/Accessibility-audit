@@ -217,6 +217,7 @@
 
       <div class="header-actions" id="header-actions" style="display:none;">
         <button id="save-btn">📄 Skapa rapport</button>
+        <button id="pres-btn">📊 Skapa presentation</button>
       </div>
 
       <div class="status-bar" id="status"></div>
@@ -350,6 +351,31 @@
       const iframe = document.getElementById('report-frame');
       if (!iframe || !iframe.contentWindow) return;
       iframe.contentWindow.postMessage('printReport', '*');
+    };
+
+    const presBtn = document.getElementById('pres-btn');
+    presBtn.onclick = async () => {
+      if (!lastUrl) return;
+      presBtn.disabled = true;
+      presBtn.textContent = '⏳ Genererar…';
+      try {
+        const res = await fetch('/presentation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: lastUrl, provider: providerSelect.value, model: modelSelect.value })
+        });
+        if (!res.ok) throw new Error(await res.text());
+        const blob = await res.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        window.open(blobUrl, '_blank');
+      } catch (err) {
+        statusEl.className = 'status-bar error';
+        statusEl.style.display = 'block';
+        statusEl.textContent = 'Fel: ' + err.message;
+      } finally {
+        presBtn.disabled = false;
+        presBtn.textContent = '📊 Skapa presentation';
+      }
     };
   </script>
 </body>
