@@ -1311,7 +1311,7 @@ mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
                 <span class="chevron">▼</span>
               </span>
             </div>
-            <div class="card-title-row">{{ issue.plain_swedish | striptags | truncate(120) }}</div>
+            <div class="card-title-row">{{ issue.plain_swedish | striptags }}</div>
             {% if issue.selectors %}
             <div class="card-preview">
               {% for sel in issue.selectors[:2] %}
