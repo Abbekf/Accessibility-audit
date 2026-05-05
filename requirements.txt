@@ -14,14 +14,15 @@ google-generativeai>=0.8.0
 # Vektor-databas för RAG
 chromadb==0.5.15
 
-# PDF-generering
-weasyprint==62.3
+# HTML-generering
+weasyprint==68.1
 
 # Miljövariabler
 python-dotenv==1.0.1
 
 # Mallar
 jinja2==3.1.4
+markupsafe==3.0.3
 
 # För att ladda ner och parsa WCAG/EAA-dokumenten
 httpx==0.27.2
