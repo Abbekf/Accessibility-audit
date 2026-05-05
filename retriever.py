@@ -25,9 +25,16 @@ from pydantic import BaseModel
 from scanner import A11yIssue
 
 
-load_dotenv()
+PROJECT_ROOT = Path(__file__).resolve().parent
+ENV_PATHS = [
+    PROJECT_ROOT / ".env",
+    PROJECT_ROOT / "a11y-audit-rag" / "a11y-audit" / ".env",
+]
+for env_path in ENV_PATHS:
+    if env_path.exists():
+        load_dotenv(dotenv_path=env_path, override=False)
 
-openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+_openai_client = None
 
 CHROMA_PATH = str(Path(__file__).parent / "chroma_db")
 COLLECTION_NAME = "a11y_laws"
@@ -45,6 +52,21 @@ class RetrievedChunk(BaseModel):
 # Vi återanvänder samma client mellan anrop, det är snabbare
 _client = None
 _collection = None
+_retrieval_warning_printed = False
+
+
+def _get_openai_client() -> OpenAI:
+    """Skapar OpenAI-klienten vid behov i stället för vid import."""
+    global _openai_client
+    if _openai_client is None:
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise RuntimeError(
+                "OPENAI_API_KEY saknas i .env. "
+                "Satt variabeln i projektets .env och starta om servern."
+            )
+        _openai_client = OpenAI(api_key=api_key)
+    return _openai_client
 
 
 def _get_collection():
@@ -79,7 +101,17 @@ def retrieve_relevant_laws(issue: A11yIssue, top_k: int = 3) -> List[RetrievedCh
     Default är 3, vilket brukar vara en bra balans mellan täckning
     och promptstorlek.
     """
-    collection = _get_collection()
+    global _retrieval_warning_printed
+
+    try:
+        collection = _get_collection()
+        openai_client = _get_openai_client()
+    except RuntimeError as exc:
+        # Fallback: låt appen fortsätta utan RAG i stället för att returnera 500.
+        if not _retrieval_warning_printed:
+            print(f"[retriever] Varning: {exc} Fortsätter utan RAG-källor.")
+            _retrieval_warning_printed = True
+        return []
 
     # Bygg sökfrågan och konvertera till embedding
     query_text = _make_query(issue)
