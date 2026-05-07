@@ -1037,428 +1037,16 @@ mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
 .print-header { display: none; }
 .print-status-badge { display: none; }
 </style>
-</head>
-<body>
-<div class="layout">
-
-  <!-- ── Sidebar ── -->
-  <aside class="sidebar">
-    <div class="sb-header">
-      <div class="sb-eyebrow">Tillgänglighetsrapport · WCAG 2.2</div>
-      <div class="sb-title">Granskningsresultat</div>
-      <div class="sb-url">{{ url }}</div>
-      <div class="sb-date">{{ scan_date }}</div>
-    </div>
-
-    {% set total = count_by_impact.critical + count_by_impact.serious + count_by_impact.moderate + count_by_impact.minor %}
-
-    <!-- Donut chart -->
-    {% if total > 0 %}
-    <div class="sb-donut-wrap">
-      {% set circ = 226.2 %}
-      {% set r = 36 %}
-      {% set offset_ns = namespace(val=0.0) %}
-      <svg class="sb-donut" width="84" height="84" viewBox="0 0 84 84">
-        <circle cx="42" cy="42" r="{{ r }}" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="11"/>
-        {% for impact, color in [
-            ('critical', '#c0392b'),
-            ('serious',  '#e05a00'),
-            ('moderate', '#d4a017'),
-            ('minor',    '#5a6a7a')
-        ] %}
-          {% set cnt = count_by_impact[impact] %}
-          {% if cnt > 0 %}
-            {% set seg = (cnt / total * circ)|round(2) %}
-            <circle cx="42" cy="42" r="{{ r }}" fill="none" stroke="{{ color }}" stroke-width="11"
-              stroke-dasharray="{{ seg }} {{ circ }}"
-              stroke-dashoffset="{{ (-offset_ns.val + circ * 0.25)|round(2) }}"
-              transform="rotate(-90 42 42)"/>
-            {% set offset_ns.val = offset_ns.val + seg %}
-          {% endif %}
-        {% endfor %}
-        <text x="42" y="38" text-anchor="middle" font-size="15" font-weight="800" fill="#fff">{{ total }}</text>
-        <text x="42" y="52" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.45)" letter-spacing="0.5">problem</text>
-      </svg>
-      <div class="sb-donut-legend">
-        {% for imp, lbl in [('critical','Kritiska'),('serious','Allvarliga'),('moderate','Måttliga'),('minor','Mindre')] %}
-        {% set cnt = count_by_impact[imp] %}
-        {% if cnt > 0 %}
-        <div class="sb-dl-row">
-          <span class="sb-dl-dot d-{{ imp }}"></span>
-          <span class="sb-dl-label">{{ lbl }}</span>
-          <span class="sb-dl-num">{{ cnt }}</span>
-          <span class="sb-dl-pct">{{ ((cnt / total * 100)|int) }}%</span>
-        </div>
-        {% endif %}
-        {% endfor %}
-      </div>
-    </div>
-    {% endif %}
-
-    <div class="sb-summary">
-      <div class="sb-summary-title">Totalt {{ total }} problem</div>
-      {% for sev, label, cls in [
-          (count_by_impact.critical, 'Kritiska',   'critical'),
-          (count_by_impact.serious,  'Allvarliga',  'serious'),
-          (count_by_impact.moderate, 'Måttliga',    'moderate'),
-          (count_by_impact.minor,    'Mindre',      'minor')
-      ] %}
-      <div class="sev-row">
-        <span class="sev-dot d-{{ cls }}"></span>
-        <span class="sev-label">{{ label }}</span>
-        <span class="sev-num" id="sev-num-{{ cls }}">{{ sev }}</span>
-        <div class="sev-bar-wrap">
-          <div class="sev-bar d-{{ cls }}" id="sev-bar-{{ cls }}"
-               style="width: {{ ((sev / total * 100) | int) if total > 0 else 0 }}%"></div>
-        </div>
-      </div>
-      {% endfor %}
-    </div>
-
-    <div class="sb-progress" id="sb-progress">
-      <div class="sb-progress-label">Hanteringsframsteg</div>
-      <div class="progress-track" id="progress-track">
-        <div class="progress-fill-fixed"   id="progress-fixed"   style="width:0%"></div>
-        <div class="progress-fill-wontfix" id="progress-wontfix" style="width:0%"></div>
-      </div>
-      <div class="progress-text" id="progress-text">0 av {{ total_issues }} hanterade</div>
-    </div>
-
-    <nav class="sb-nav">
-      <div class="sb-nav-label">Kategorier</div>
-      {% for cat in digg_groups %}
-      {% set ct = namespace(c=0, s=0, m=0, i=0) %}
-      {% for iss in cat.issues %}
-        {% if iss.impact == 'critical' %}{% set ct.c = ct.c + 1 %}
-        {% elif iss.impact == 'serious' %}{% set ct.s = ct.s + 1 %}
-        {% elif iss.impact == 'moderate' %}{% set ct.m = ct.m + 1 %}
-        {% else %}{% set ct.i = ct.i + 1 %}{% endif %}
-      {% endfor %}
-      {% set cat_total = ct.c + ct.s + ct.m + ct.i %}
-      <div class="nav-item{% if loop.first %} active{% endif %}"
-           onclick="showCat({{ loop.index0 }}, this)"
-           data-cat="{{ loop.index0 }}"
-           data-count-all="{{ cat_total }}"
-           data-count-critical="{{ ct.c }}"
-           data-count-serious="{{ ct.s }}"
-           data-count-moderate="{{ ct.m }}"
-           data-count-minor="{{ ct.i }}"
-           data-worst="{{ cat.worst_impact }}">
-        <span class="nav-icon">{{ cat.icon }}</span>
-        <div class="nav-body">
-          <div class="nav-name">{{ cat.category }}</div>
-          <div class="nav-mini-bars">
-            {% if ct.c > 0 %}<div class="nmb d-critical" style="width:{{ [(ct.c / cat_total * 60)|int, 4]|max }}px"></div>{% endif %}
-            {% if ct.s > 0 %}<div class="nmb d-serious"  style="width:{{ [(ct.s / cat_total * 60)|int, 4]|max }}px"></div>{% endif %}
-            {% if ct.m > 0 %}<div class="nmb d-moderate" style="width:{{ [(ct.m / cat_total * 60)|int, 4]|max }}px"></div>{% endif %}
-            {% if ct.i > 0 %}<div class="nmb d-minor"    style="width:{{ [(ct.i / cat_total * 60)|int, 4]|max }}px"></div>{% endif %}
-          </div>
-        </div>
-        <span class="nav-badge nb-{{ cat.worst_impact }}">{{ cat_total }}</span>
-      </div>
-      {% endfor %}
-    </nav>
-  </aside>
-
-  <!-- ── Main ── -->
-  <div class="main">
-    <div class="topbar">
-      <div class="topbar-title" id="topbar-title">
-        {% if digg_groups %}{{ digg_groups[0].icon }} {{ digg_groups[0].category }}{% endif %}
-      </div>
-
-      <div class="search-wrap">
-        <span class="search-icon">🔍</span>
-        <input type="text" id="search-input" placeholder="Sök problem, regel, WCAG…" oninput="onSearch(this.value)">
-      </div>
-
-      <span class="topbar-count" id="topbar-count"></span>
-
-      <div style="display:flex; gap:5px; flex-shrink:0;">
-        <button class="fbtn" onclick="expandAllVisible()" title="Expandera alla synliga kort">Expandera alla</button>
-        <button class="fbtn" onclick="collapseAllVisible()" title="Kollapsa alla synliga kort">Kollapsa alla</button>
-      </div>
-
-      <div class="filter-row">
-        <button class="fbtn on"  onclick="setFilter('all',      this)">Alla</button>
-        <button class="fbtn fc"  onclick="setFilter('critical', this)">Kritiska</button>
-        <button class="fbtn fs"  onclick="setFilter('serious',  this)">Allvarliga</button>
-        <button class="fbtn fm"  onclick="setFilter('moderate', this)">Måttliga</button>
-        <button class="fbtn fi"  onclick="setFilter('minor',    this)">Mindre</button>
-        <button class="fbtn on" id="btn-resolved" onclick="toggleResolved(this)" title="Visa/dölj hanterade problem" style="margin-left:4px">Dölj hanterade</button>
-        <button class="fbtn print-btn" onclick="printReport()" title="Skapa PDF-rapport" style="margin-left:8px;background:#1a4db5;color:#fff;border-color:#1a4db5">📄 Skapa rapport</button>
-      </div>
-    </div>
-
-    <div class="content" id="content">
-
-      <!-- Intro hero -->
-      {% set total = count_by_impact.critical + count_by_impact.serious + count_by_impact.moderate + count_by_impact.minor %}
-      <div class="intro-hero">
-        <div class="intro-hero-text">
-          <div class="intro-hero-eyebrow">WCAG 2.2 · Tillgänglighetsrapport · {{ scan_date }}</div>
-          <div class="intro-hero-title">{{ site_name }}</div>
-          <div class="intro-hero-url">{{ url }}</div>
-          <div class="intro-chips">
-            {% if count_by_impact.critical > 0 %}<span class="intro-chip ic-critical">🔴 {{ count_by_impact.critical }} kritiska</span>{% endif %}
-            {% if count_by_impact.serious  > 0 %}<span class="intro-chip ic-serious">🟠 {{ count_by_impact.serious }} allvarliga</span>{% endif %}
-            {% if count_by_impact.moderate > 0 %}<span class="intro-chip ic-moderate">🟡 {{ count_by_impact.moderate }} måttliga</span>{% endif %}
-            {% if count_by_impact.minor    > 0 %}<span class="intro-chip ic-minor">⚪ {{ count_by_impact.minor }} mindre</span>{% endif %}
-          </div>
-        </div>
-        <svg class="intro-hero-svg" width="64" height="64" viewBox="0 0 64 64" opacity="0.25">
-          <circle cx="32" cy="32" r="28" fill="none" stroke="#7eaaff" stroke-width="2"/>
-          <path d="M32 12 L32 32 L46 46" fill="none" stroke="#7eaaff" stroke-width="2.5" stroke-linecap="round"/>
-          <circle cx="32" cy="32" r="3" fill="#7eaaff"/>
-        </svg>
-      </div>
-
-      <!-- Print header (dold i normalläge, visas vid utskrift) -->
-      <div class="print-header">
-        <h1>Tillgänglighetsrapport — {{ url }}</h1>
-        <div class="print-meta">Granskad: {{ scan_date }} &nbsp;·&nbsp; Genererad av Tillgänglighetsrevisor (axe-core + AI)</div>
-        <div class="print-summary-row" id="print-summary-row"></div>
-      </div>
-
-      <!-- Dashboard -->
-      {% set total = count_by_impact.critical + count_by_impact.serious + count_by_impact.moderate + count_by_impact.minor %}
-      {% if total > 0 %}
-      <div class="dashboard" id="dashboard">
-        {% for sev, label, cls in [
-            (count_by_impact.critical, 'Kritiska',  'critical'),
-            (count_by_impact.serious,  'Allvarliga', 'serious'),
-            (count_by_impact.moderate, 'Måttliga',  'moderate'),
-            (count_by_impact.minor,    'Mindre',    'minor')
-        ] %}
-        <div class="dash-card dc-{{ cls }}" onclick="dashFilter('{{ cls }}', this)" title="Filtrera på {{ label | lower }}"
-             data-impact="{{ cls }}" data-total="{{ sev }}">
-          <div class="dash-num" id="dash-num-{{ cls }}" data-orig="{{ sev }}">{{ sev }}</div>
-          <div class="dash-label">{{ label }}</div>
-          <div class="dash-bar-wrap">
-            <div class="dash-bar" id="dash-bar-{{ cls }}" style="width:{{ ((sev / total * 100)|int) if total > 0 else 0 }}%"></div>
-          </div>
-        </div>
-        {% endfor %}
-      </div>
-      {% endif %}
-
-      <!-- Search empty state -->
-      <div class="search-empty" id="search-empty">
-        <div class="icon">🔍</div>
-        <strong>Inga träffar för "<span id="search-term-display"></span>"</strong>
-        <p>Prova ett annat sökord eller rensa sökningen.</p>
-      </div>
-
-      {% set CAT_DESC = {
-        'Störande':           'Automatiskt innehåll kan störa eller skada användare med epilepsi eller kognitiva nedsättningar.',
-        'Struktur':           'Sidans uppbyggnad, rubriker och landmärken hjälper skärmläsare att förstå och navigera sidan.',
-        'Tangentbord':        'Alla funktioner ska kunna nås utan mus – avgörande för motoriknedsatta och tangentbordsanvändare.',
-        'Storlek & Skärm':    'Klickyta och zoom-möjligheter är kritiska för motoriknedsättning och synskada.',
-        'Färg & Form':        'Kontrasten och färganvändningen påverkar läsbarheten för synskadade och färgblinda användare.',
-        'Bilder, Ljud & Video': 'Alternativa textbeskrivningar för bilder och media som skärmläsare kan tolka och läsa upp.',
-        'Formulär':           'Korrekt märkta fält hjälper alla användare att fylla i formulär, särskilt med hjälpmedel.',
-        'Kod':                'ARIA-attribut och HTML-semantik som tolkas av skärmläsare, tangentbord och andra hjälpmedel.',
-        'Övrigt':             'Problem som inte passar in i övriga kategorier men ändå kan påverka tillgängligheten.',
-      } %}
-
-      {% set CAT_USERS = {
-        'Störande':           ['Epilepsi', 'Kognitiva nedsättningar'],
-        'Struktur':           ['Skärmläsare', 'Tangentbordsnavigation'],
-        'Tangentbord':        ['Motoriknedsättning', 'Tangentbordsanvändare'],
-        'Storlek & Skärm':    ['Motoriknedsättning', 'Synskada', 'Mobil'],
-        'Färg & Form':        ['Synskada', 'Färgblindhet', 'Nedsatt syn'],
-        'Bilder, Ljud & Video': ['Synskada', 'Hörselnedsättning', 'Skärmläsare'],
-        'Formulär':           ['Skärmläsare', 'Kognitiva nedsättningar'],
-        'Kod':                ['Skärmläsare', 'Hjälpmedel'],
-        'Övrigt':             ['Varierar'],
-      } %}
-
-      {% for cat in digg_groups %}
-      <div class="cat-view" id="cat-{{ loop.index0 }}"
-           style="{{ '' if loop.first else 'display:none' }}">
-
-        <div class="cat-header" style="flex-wrap:wrap; row-gap:4px;">
-          <span class="cat-icon" style="font-size:24px;">{{ cat.icon }}</span>
-          <div style="flex:1; min-width:0;">
-            <span class="cat-title">{{ cat.category }}</span>
-            <div class="cat-desc">{{ CAT_DESC.get(cat.category, '') }}</div>
-            {% set users = CAT_USERS.get(cat.category, []) %}
-            {% if users %}
-            <div class="user-groups">
-              {% for u in users %}<span class="user-group-pill">{{ u }}</span>{% endfor %}
-            </div>
-            {% endif %}
-          </div>
-          <span class="cat-meta">{{ cat.issues|length }} problem</span>
-          <div class="cat-actions">
-            <button class="cat-action-btn" onclick="expandAll({{ loop.index0 }})">Expandera alla</button>
-            <button class="cat-action-btn" onclick="collapseAll({{ loop.index0 }})">Kollapsa alla</button>
-          </div>
-        </div>
-
-        {% for issue in cat.issues %}
-        <div class="issue-card" data-impact="{{ issue.impact }}"
-             data-rule="{{ issue.rule_id }}"
-             data-search="{{ (issue.plain_swedish ~ ' ' ~ issue.rule_id ~ ' ' ~ (issue.wcag_reference or '') ~ ' ' ~ issue.selectors|map(attribute='label')|join(' ')) | lower | striptags | replace('"', '') | replace("'", '') }}">
-
-          <div class="card-summary" onclick="toggleCard(this.parentElement)">
-            <div class="card-meta-row">
-              <span class="impact-badge ib-{{ issue.impact }}">{{ issue.impact }}</span>
-              {% if issue.wcag_reference %}
-              <span class="card-wcag">{{ issue.wcag_reference }}</span>
-              {% endif %}
-              <span class="card-rule">{{ issue.rule_id }}</span>
-              <span class="card-count-pill">
-                {{ issue.count }} träff{{ "ar" if issue.count > 1 else "" }}
-                <span class="resolved-badge" style="display:none"></span>
-                <span class="chevron">▼</span>
-              </span>
-            </div>
-            <div class="card-title-row">{{ issue.plain_swedish | striptags }}</div>
-            {% if issue.selectors %}
-            <div class="card-preview">
-              {% for sel in issue.selectors[:2] %}
-              <span class="preview-pill">{{ sel.label }}</span>
-              {% endfor %}
-              {% if issue.selectors|length > 2 %}
-              <span class="preview-more">+{{ issue.selectors|length - 2 }} till</span>
-              {% endif %}
-            </div>
-            {% endif %}
-          </div>
-
-          <div class="status-bar">
-            <button class="status-btn" onclick="setStatus(this, 'fixed')"   title="Markera som åtgärdad">✅ Åtgärdad</button>
-            <button class="status-btn" onclick="setStatus(this, 'wontfix')" title="Markera som ej relevant">🚫 Ej relevant</button>
-          </div>
-
-          <div class="card-body">
-            {% if issue.screenshot_b64 and issue.count <= 5 %}
-            <!-- Screenshot: full width at top -->
-            <div class="card-panel card-panel-screenshot">
-              <img class="screenshot"
-                   src="data:image/png;base64,{{ issue.screenshot_b64 }}"
-                   alt="Skärmdump av första träffade elementet">
-              <div class="screenshot-label">Skärmdump: första träffen</div>
-            </div>
-            {% endif %}
-
-            <!-- Explanation -->
-            <div class="card-panel">
-              <div class="panel-label">Vad det innebär</div>
-              <div class="fix-body" style="margin-bottom:14px; color: var(--muted);">{{ issue.plain_swedish | striptags | truncate(400) }}</div>
-              <div class="panel-label">Förslag på åtgärd</div>
-              <div class="fix-body">{{ issue.suggested_fix | safe }}</div>
-
-              {% if issue.confidence == "low" %}
-              <div class="low-conf">⚠️ Osäkert AI-förslag — verifiera manuellt innan åtgärd.</div>
-              {% endif %}
-
-              <div class="card-footer">
-                {% if issue.citations %}
-                <span class="citations-text">
-                  <strong>Källor:</strong>
-                  {% for c in issue.citations %}{{ c.reference }}{% if not loop.last %} · {% endif %}{% endfor %}
-                </span>
-                {% endif %}
-                <a class="axe-link" href="{{ issue.help_url }}" target="_blank" rel="noopener">
-                  Mer info hos axe-core →
-                </a>
-              </div>
-            </div>
-
-            <!-- Elements -->
-            <div class="card-panel">
-              <div class="panel-label">Berörda element ({{ issue.count }} st)</div>
-
-              <ul class="el-list">
-                {% for sel in issue.selectors %}
-                {% set el_key = issue.rule_id ~ '::' ~ loop.index %}
-                <li class="el-item{% if loop.index > 5 %} el-extra{% endif %}"
-                    data-el-key="{{ el_key }}"
-                    {% if loop.index > 5 %}style="display:none"{% endif %}>
-                  <div class="el-label">{{ sel.label }}</div>
-                  {% if sel.source_url %}
-                  <a class="el-page-link" href="{{ sel.source_url }}" target="_blank" rel="noopener">
-                    🌐 Öppna sidan &rarr; <span class="el-page-url">{{ sel.source_url }}</span>
-                  </a>
-                  {% endif %}
-                  {% if sel.selector %}
-                  <div class="el-selector-inline">{{ sel.selector | e }}</div>
-                  {% endif %}
-                  {% if sel.vision_fix %}
-                  <div class="vision-fix">🤖 <strong>AI-bedömning:</strong> {{ sel.vision_fix | safe }}</div>
-                  {% endif %}
-                  {% if sel.selector %}
-                  <div class="el-actions" data-selector="{{ sel.selector | e }}"
-                       data-html="{{ sel.html | replace('"', '&quot;') | replace("'","&#39;") | replace("\\","\\\\") }}">
-                    <button class="el-btn" onclick="copySel(this)">Kopiera selektor</button>
-                    <button class="el-btn" onclick="copyConsole(this)">Kopiera konsolkommando</button>
-                    <button class="el-btn" onclick="toggleHtml(this)">Visa HTML</button>
-                    <button class="el-btn" onclick="toggleSelector(this)">Visa selektor</button>
-                  </div>
-                  <div class="el-html-hidden" style="display:none"
-                       onclick="copyElFromHidden(this)"
-                       title="Klicka för att kopiera HTML"></div>
-                  <div class="el-selector">{{ sel.selector | e }}</div>
-                  {% endif %}
-                  <div class="el-status-row">
-                    <button class="el-status-btn" onclick="setElStatus(this, 'fixed')"   title="Markera detta element som åtgärdat">✅ Åtgärdad</button>
-                    <button class="el-status-btn" onclick="setElStatus(this, 'wontfix')" title="Markera detta element som ej relevant">🚫 Ej relevant</button>
-                    <span class="el-resolved-label" style="display:none"></span>
-                  </div>
-                </li>
-                {% endfor %}
-              </ul>
-
-              {% if issue.selectors|length > 5 %}
-              <button class="show-more-btn"
-                      onclick="toggleExtra(this)"
-                      data-total="{{ issue.selectors|length }}">
-                Visa alla {{ issue.selectors|length }} element ▼
-              </button>
-              {% endif %}
-            </div>
-          </div>
-        </div>
-        {% endfor %}
-
-        <div class="no-results" id="no-results-{{ loop.index0 }}" style="display:none">
-          <div class="icon">🔍</div>
-          <strong>Inga problem matchar det valda filtret.</strong>
-          <p>Prova ett annat filter eller välj "Alla".</p>
-        </div>
-      </div>
-      {% endfor %}
-
-      {% if not digg_groups %}
-      <div class="all-clear">
-        <div class="icon">✅</div>
-        <h2>Inga automatiskt detekterade problem!</h2>
-        <p>Automatisk granskning täcker ca 30–40 % av WCAG-brott. Manuell granskning rekommenderas alltid som komplement.</p>
-      </div>
-      {% endif %}
-    </div>
-
-    <div class="disclaimer">
-      Problem identifierade av <strong>axe-core</strong>. Förklaringar genererade av AI baserat på officiell WCAG 2.2- och EAA-text via RAG.
-      Automatisk granskning täcker ca 30–40 % av WCAG-brott — manuell granskning rekommenderas alltid som komplement.
-    </div>
-  </div>
-</div>
-
-<div class="toast" id="toast"></div>
-
+<script>
+const _URL_KEY     = '{{ url | replace("https://","") | replace("http://","") | replace("'", "") }}';
+const STORAGE_KEY  = 'a11y_status_'    + _URL_KEY;
+const EL_STORE_KEY = 'a11y_el_status_' + _URL_KEY;
+</script>
 <script>
 let currentFilter = 'all';
 let currentCatIdx = 0;
 let currentSearch = '';
 let showResolved = true;
-
-// ── localStorage keys ──
-const _URL_KEY     = '{{ url | replace("https://","") | replace("http://","") }}';
-const STORAGE_KEY  = 'a11y_status_'    + _URL_KEY;   // per issue-card (rule_id)
-const EL_STORE_KEY = 'a11y_el_status_' + _URL_KEY;   // per element
 
 function loadStatuses() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
@@ -1870,8 +1458,6 @@ function setFilter(impact, btn) {
     if (dashCards[map[impact]]) dashCards[map[impact]].classList.add('active-filter');
   }
 
-  // Återanvänd dashFilter-logiken via ett fakeCard-objekt
-  const fakeCard = { classList: { contains: () => false, add: () => {}, remove: () => {} } };
   currentFilter = impact;
   updateNavBadges(impact);
 
@@ -2111,7 +1697,6 @@ window.addEventListener('message', (e) => {
   if (e.data === 'printReport') printReport();
 });
 
-
 document.addEventListener('DOMContentLoaded', () => {
   restoreStatuses();
   restoreElStatuses();
@@ -2120,5 +1705,417 @@ document.addEventListener('DOMContentLoaded', () => {
   applyFilterAndSearch(0);
 });
 </script>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="sb-header">
+      <div class="sb-eyebrow">Tillgänglighetsrapport · WCAG 2.2</div>
+      <div class="sb-title">Granskningsresultat</div>
+      <div class="sb-url">{{ url }}</div>
+      <div class="sb-date">{{ scan_date }}</div>
+    </div>
+
+    {% set total = count_by_impact.critical + count_by_impact.serious + count_by_impact.moderate + count_by_impact.minor %}
+
+    <!-- Donut chart -->
+    {% if total > 0 %}
+    <div class="sb-donut-wrap">
+      {% set circ = 226.2 %}
+      {% set r = 36 %}
+      {% set offset_ns = namespace(val=0.0) %}
+      <svg class="sb-donut" width="84" height="84" viewBox="0 0 84 84">
+        <circle cx="42" cy="42" r="{{ r }}" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="11"/>
+        {% for impact, color in [
+            ('critical', '#c0392b'),
+            ('serious',  '#e05a00'),
+            ('moderate', '#d4a017'),
+            ('minor',    '#5a6a7a')
+        ] %}
+          {% set cnt = count_by_impact[impact] %}
+          {% if cnt > 0 %}
+            {% set seg = (cnt / total * circ)|round(2) %}
+            <circle cx="42" cy="42" r="{{ r }}" fill="none" stroke="{{ color }}" stroke-width="11"
+              stroke-dasharray="{{ seg }} {{ circ }}"
+              stroke-dashoffset="{{ (-offset_ns.val + circ * 0.25)|round(2) }}"
+              transform="rotate(-90 42 42)"/>
+            {% set offset_ns.val = offset_ns.val + seg %}
+          {% endif %}
+        {% endfor %}
+        <text x="42" y="38" text-anchor="middle" font-size="15" font-weight="800" fill="#fff">{{ total }}</text>
+        <text x="42" y="52" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.45)" letter-spacing="0.5">problem</text>
+      </svg>
+      <div class="sb-donut-legend">
+        {% for imp, lbl in [('critical','Kritiska'),('serious','Allvarliga'),('moderate','Måttliga'),('minor','Mindre')] %}
+        {% set cnt = count_by_impact[imp] %}
+        {% if cnt > 0 %}
+        <div class="sb-dl-row">
+          <span class="sb-dl-dot d-{{ imp }}"></span>
+          <span class="sb-dl-label">{{ lbl }}</span>
+          <span class="sb-dl-num">{{ cnt }}</span>
+          <span class="sb-dl-pct">{{ ((cnt / total * 100)|int) }}%</span>
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="sb-summary">
+      <div class="sb-summary-title">Totalt {{ total }} problem</div>
+      {% for sev, label, cls in [
+          (count_by_impact.critical, 'Kritiska',   'critical'),
+          (count_by_impact.serious,  'Allvarliga',  'serious'),
+          (count_by_impact.moderate, 'Måttliga',    'moderate'),
+          (count_by_impact.minor,    'Mindre',      'minor')
+      ] %}
+      <div class="sev-row">
+        <span class="sev-dot d-{{ cls }}"></span>
+        <span class="sev-label">{{ label }}</span>
+        <span class="sev-num" id="sev-num-{{ cls }}">{{ sev }}</span>
+        <div class="sev-bar-wrap">
+          <div class="sev-bar d-{{ cls }}" id="sev-bar-{{ cls }}"
+               style="width: {{ ((sev / total * 100) | int) if total > 0 else 0 }}%"></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="sb-progress" id="sb-progress">
+      <div class="sb-progress-label">Hanteringsframsteg</div>
+      <div class="progress-track" id="progress-track">
+        <div class="progress-fill-fixed"   id="progress-fixed"   style="width:0%"></div>
+        <div class="progress-fill-wontfix" id="progress-wontfix" style="width:0%"></div>
+      </div>
+      <div class="progress-text" id="progress-text">0 av {{ total_issues }} hanterade</div>
+    </div>
+
+    <nav class="sb-nav">
+      <div class="sb-nav-label">Kategorier</div>
+      {% for cat in digg_groups %}
+      {% set ct = namespace(c=0, s=0, m=0, i=0) %}
+      {% for iss in cat.issues %}
+        {% if iss.impact == 'critical' %}{% set ct.c = ct.c + 1 %}
+        {% elif iss.impact == 'serious' %}{% set ct.s = ct.s + 1 %}
+        {% elif iss.impact == 'moderate' %}{% set ct.m = ct.m + 1 %}
+        {% else %}{% set ct.i = ct.i + 1 %}{% endif %}
+      {% endfor %}
+      {% set cat_total = ct.c + ct.s + ct.m + ct.i %}
+      <div class="nav-item{% if loop.first %} active{% endif %}"
+           onclick="showCat({{ loop.index0 }}, this)"
+           data-cat="{{ loop.index0 }}"
+           data-count-all="{{ cat_total }}"
+           data-count-critical="{{ ct.c }}"
+           data-count-serious="{{ ct.s }}"
+           data-count-moderate="{{ ct.m }}"
+           data-count-minor="{{ ct.i }}"
+           data-worst="{{ cat.worst_impact }}">
+        <span class="nav-icon">{{ cat.icon }}</span>
+        <div class="nav-body">
+          <div class="nav-name">{{ cat.category }}</div>
+          <div class="nav-mini-bars">
+            {% if ct.c > 0 %}<div class="nmb d-critical" style="width:{{ [(ct.c / cat_total * 60)|int, 4]|max }}px"></div>{% endif %}
+            {% if ct.s > 0 %}<div class="nmb d-serious"  style="width:{{ [(ct.s / cat_total * 60)|int, 4]|max }}px"></div>{% endif %}
+            {% if ct.m > 0 %}<div class="nmb d-moderate" style="width:{{ [(ct.m / cat_total * 60)|int, 4]|max }}px"></div>{% endif %}
+            {% if ct.i > 0 %}<div class="nmb d-minor"    style="width:{{ [(ct.i / cat_total * 60)|int, 4]|max }}px"></div>{% endif %}
+          </div>
+        </div>
+        <span class="nav-badge nb-{{ cat.worst_impact }}">{{ cat_total }}</span>
+      </div>
+      {% endfor %}
+    </nav>
+  </aside>
+
+  <!-- ── Main ── -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="topbar-title">
+        {% if digg_groups %}{{ digg_groups[0].icon }} {{ digg_groups[0].category }}{% endif %}
+      </div>
+
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="search-input" placeholder="Sök problem, regel, WCAG…" oninput="onSearch(this.value)">
+      </div>
+
+      <span class="topbar-count" id="topbar-count"></span>
+
+      <div style="display:flex; gap:5px; flex-shrink:0;">
+        <button class="fbtn" onclick="expandAllVisible()" title="Expandera alla synliga kort">Expandera alla</button>
+        <button class="fbtn" onclick="collapseAllVisible()" title="Kollapsa alla synliga kort">Kollapsa alla</button>
+      </div>
+
+      <div class="filter-row">
+        <button class="fbtn on"  onclick="setFilter('all',      this)">Alla</button>
+        <button class="fbtn fc"  onclick="setFilter('critical', this)">Kritiska</button>
+        <button class="fbtn fs"  onclick="setFilter('serious',  this)">Allvarliga</button>
+        <button class="fbtn fm"  onclick="setFilter('moderate', this)">Måttliga</button>
+        <button class="fbtn fi"  onclick="setFilter('minor',    this)">Mindre</button>
+        <button class="fbtn on" id="btn-resolved" onclick="toggleResolved(this)" title="Visa/dölj hanterade problem" style="margin-left:4px">Dölj hanterade</button>
+        <button class="fbtn print-btn" onclick="printReport()" title="Skapa PDF-rapport" style="margin-left:8px;background:#1a4db5;color:#fff;border-color:#1a4db5">📄 Skapa rapport</button>
+      </div>
+    </div>
+
+    <div class="content" id="content">
+
+      <!-- Intro hero -->
+      {% set total = count_by_impact.critical + count_by_impact.serious + count_by_impact.moderate + count_by_impact.minor %}
+      <div class="intro-hero">
+        <div class="intro-hero-text">
+          <div class="intro-hero-eyebrow">WCAG 2.2 · Tillgänglighetsrapport · {{ scan_date }}</div>
+          <div class="intro-hero-title">{{ site_name }}</div>
+          <div class="intro-hero-url">{{ url }}</div>
+          <div class="intro-chips">
+            {% if count_by_impact.critical > 0 %}<span class="intro-chip ic-critical">🔴 {{ count_by_impact.critical }} kritiska</span>{% endif %}
+            {% if count_by_impact.serious  > 0 %}<span class="intro-chip ic-serious">🟠 {{ count_by_impact.serious }} allvarliga</span>{% endif %}
+            {% if count_by_impact.moderate > 0 %}<span class="intro-chip ic-moderate">🟡 {{ count_by_impact.moderate }} måttliga</span>{% endif %}
+            {% if count_by_impact.minor    > 0 %}<span class="intro-chip ic-minor">⚪ {{ count_by_impact.minor }} mindre</span>{% endif %}
+          </div>
+        </div>
+        <svg class="intro-hero-svg" width="64" height="64" viewBox="0 0 64 64" opacity="0.25">
+          <circle cx="32" cy="32" r="28" fill="none" stroke="#7eaaff" stroke-width="2"/>
+          <path d="M32 12 L32 32 L46 46" fill="none" stroke="#7eaaff" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="32" cy="32" r="3" fill="#7eaaff"/>
+        </svg>
+      </div>
+
+      <!-- Print header (dold i normalläge, visas vid utskrift) -->
+      <div class="print-header">
+        <h1>Tillgänglighetsrapport — {{ url }}</h1>
+        <div class="print-meta">Granskad: {{ scan_date }} &nbsp;·&nbsp; Genererad av Tillgänglighetsrevisor (axe-core + AI)</div>
+        <div class="print-summary-row" id="print-summary-row"></div>
+      </div>
+
+      <!-- Dashboard -->
+      {% set total = count_by_impact.critical + count_by_impact.serious + count_by_impact.moderate + count_by_impact.minor %}
+      {% if total > 0 %}
+      <div class="dashboard" id="dashboard">
+        {% for sev, label, cls in [
+            (count_by_impact.critical, 'Kritiska',  'critical'),
+            (count_by_impact.serious,  'Allvarliga', 'serious'),
+            (count_by_impact.moderate, 'Måttliga',  'moderate'),
+            (count_by_impact.minor,    'Mindre',    'minor')
+        ] %}
+        <div class="dash-card dc-{{ cls }}" onclick="dashFilter('{{ cls }}', this)" title="Filtrera på {{ label | lower }}"
+             data-impact="{{ cls }}" data-total="{{ sev }}">
+          <div class="dash-num" id="dash-num-{{ cls }}" data-orig="{{ sev }}">{{ sev }}</div>
+          <div class="dash-label">{{ label }}</div>
+          <div class="dash-bar-wrap">
+            <div class="dash-bar" id="dash-bar-{{ cls }}" style="width:{{ ((sev / total * 100)|int) if total > 0 else 0 }}%"></div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- Search empty state -->
+      <div class="search-empty" id="search-empty">
+        <div class="icon">🔍</div>
+        <strong>Inga träffar för "<span id="search-term-display"></span>"</strong>
+        <p>Prova ett annat sökord eller rensa sökningen.</p>
+      </div>
+
+      {% set CAT_DESC = {
+        'Störande':           'Automatiskt innehåll kan störa eller skada användare med epilepsi eller kognitiva nedsättningar.',
+        'Struktur':           'Sidans uppbyggnad, rubriker och landmärken hjälper skärmläsare att förstå och navigera sidan.',
+        'Tangentbord':        'Alla funktioner ska kunna nås utan mus – avgörande för motoriknedsatta och tangentbordsanvändare.',
+        'Storlek & Skärm':    'Klickyta och zoom-möjligheter är kritiska för motoriknedsättning och synskada.',
+        'Färg & Form':        'Kontrasten och färganvändningen påverkar läsbarheten för synskadade och färgblinda användare.',
+        'Bilder, Ljud & Video': 'Alternativa textbeskrivningar för bilder och media som skärmläsare kan tolka och läsa upp.',
+        'Formulär':           'Korrekt märkta fält hjälper alla användare att fylla i formulär, särskilt med hjälpmedel.',
+        'Kod':                'ARIA-attribut och HTML-semantik som tolkas av skärmläsare, tangentbord och andra hjälpmedel.',
+        'Övrigt':             'Problem som inte passar in i övriga kategorier men ändå kan påverka tillgängligheten.',
+      } %}
+
+      {% set CAT_USERS = {
+        'Störande':           ['Epilepsi', 'Kognitiva nedsättningar'],
+        'Struktur':           ['Skärmläsare', 'Tangentbordsnavigation'],
+        'Tangentbord':        ['Motoriknedsättning', 'Tangentbordsanvändare'],
+        'Storlek & Skärm':    ['Motoriknedsättning', 'Synskada', 'Mobil'],
+        'Färg & Form':        ['Synskada', 'Färgblindhet', 'Nedsatt syn'],
+        'Bilder, Ljud & Video': ['Synskada', 'Hörselnedsättning', 'Skärmläsare'],
+        'Formulär':           ['Skärmläsare', 'Kognitiva nedsättningar'],
+        'Kod':                ['Skärmläsare', 'Hjälpmedel'],
+        'Övrigt':             ['Varierar'],
+      } %}
+
+      {% for cat in digg_groups %}
+      <div class="cat-view" id="cat-{{ loop.index0 }}"
+           style="{{ '' if loop.first else 'display:none' }}">
+
+        <div class="cat-header" style="flex-wrap:wrap; row-gap:4px;">
+          <span class="cat-icon" style="font-size:24px;">{{ cat.icon }}</span>
+          <div style="flex:1; min-width:0;">
+            <span class="cat-title">{{ cat.category }}</span>
+            <div class="cat-desc">{{ CAT_DESC.get(cat.category, '') }}</div>
+            {% set users = CAT_USERS.get(cat.category, []) %}
+            {% if users %}
+            <div class="user-groups">
+              {% for u in users %}<span class="user-group-pill">{{ u }}</span>{% endfor %}
+            </div>
+            {% endif %}
+          </div>
+          <span class="cat-meta">{{ cat.issues|length }} problem</span>
+          <div class="cat-actions">
+            <button class="cat-action-btn" onclick="expandAll({{ loop.index0 }})">Expandera alla</button>
+            <button class="cat-action-btn" onclick="collapseAll({{ loop.index0 }})">Kollapsa alla</button>
+          </div>
+        </div>
+
+        {% for issue in cat.issues %}
+        <div class="issue-card" data-impact="{{ issue.impact }}"
+             data-rule="{{ issue.rule_id }}"
+             data-search="{{ (issue.plain_swedish ~ ' ' ~ issue.rule_id ~ ' ' ~ (issue.wcag_reference or '') ~ ' ' ~ issue.selectors|map(attribute='label')|join(' ')) | lower | striptags | replace('"', '') | replace("'", '') }}">
+
+          <div class="card-summary" onclick="toggleCard(this.parentElement)">
+            <div class="card-meta-row">
+              <span class="impact-badge ib-{{ issue.impact }}">{{ issue.impact }}</span>
+              {% if issue.wcag_reference %}
+              <span class="card-wcag">{{ issue.wcag_reference }}</span>
+              {% endif %}
+              <span class="card-rule">{{ issue.rule_id }}</span>
+              <span class="card-count-pill">
+                {{ issue.count }} träff{{ "ar" if issue.count > 1 else "" }}
+                <span class="resolved-badge" style="display:none"></span>
+                <span class="chevron">▼</span>
+              </span>
+            </div>
+            <div class="card-title-row">{{ issue.plain_swedish | striptags }}</div>
+            {% if issue.selectors %}
+            <div class="card-preview">
+              {% for sel in issue.selectors[:2] %}
+              <span class="preview-pill">{{ sel.label }}</span>
+              {% endfor %}
+              {% if issue.selectors|length > 2 %}
+              <span class="preview-more">+{{ issue.selectors|length - 2 }} till</span>
+              {% endif %}
+            </div>
+            {% endif %}
+          </div>
+
+          <div class="status-bar">
+            <button class="status-btn" onclick="setStatus(this, 'fixed')"   title="Markera som åtgärdad">✅ Åtgärdad</button>
+            <button class="status-btn" onclick="setStatus(this, 'wontfix')" title="Markera som ej relevant">🚫 Ej relevant</button>
+          </div>
+
+          <div class="card-body">
+            {% if issue.screenshot_b64 and issue.count <= 5 %}
+            <!-- Screenshot: full width at top -->
+            <div class="card-panel card-panel-screenshot">
+              <img class="screenshot"
+                   src="data:image/jpeg;base64,{{ issue.screenshot_b64 }}"
+                   alt="Skärmdump av första träffade elementet">
+              <div class="screenshot-label">Skärmdump: första träffen</div>
+            </div>
+            {% endif %}
+
+            <!-- Explanation -->
+            <div class="card-panel">
+              <div class="panel-label">Vad det innebär</div>
+              <div class="fix-body" style="margin-bottom:14px; color: var(--muted);">{{ issue.plain_swedish | striptags | truncate(400) }}</div>
+              <div class="panel-label">Förslag på åtgärd</div>
+              <div class="fix-body">{{ issue.suggested_fix | safe }}</div>
+
+              {% if issue.confidence == "low" %}
+              <div class="low-conf">⚠️ Osäkert AI-förslag — verifiera manuellt innan åtgärd.</div>
+              {% endif %}
+
+              <div class="card-footer">
+                {% if issue.citations %}
+                <span class="citations-text">
+                  <strong>Källor:</strong>
+                  {% for c in issue.citations %}{{ c.reference }}{% if not loop.last %} · {% endif %}{% endfor %}
+                </span>
+                {% endif %}
+                <a class="axe-link" href="{{ issue.help_url }}" target="_blank" rel="noopener">
+                  Mer info hos axe-core →
+                </a>
+              </div>
+            </div>
+
+            <!-- Elements -->
+            <div class="card-panel">
+              <div class="panel-label">Berörda element ({{ issue.count }} st)</div>
+
+              <ul class="el-list">
+                {% for sel in issue.selectors %}
+                {% set el_key = issue.rule_id ~ '::' ~ loop.index %}
+                <li class="el-item{% if loop.index > 5 %} el-extra{% endif %}"
+                    data-el-key="{{ el_key }}"
+                    {% if loop.index > 5 %}style="display:none"{% endif %}>
+                  <div class="el-label">{{ sel.label }}</div>
+                  {% if sel.source_url %}
+                  <a class="el-page-link" href="{{ sel.source_url }}" target="_blank" rel="noopener">
+                    🌐 Öppna sidan &rarr; <span class="el-page-url">{{ sel.source_url }}</span>
+                  </a>
+                  {% endif %}
+                  {% if sel.selector %}
+                  <div class="el-selector-inline">{{ sel.selector | e }}</div>
+                  {% endif %}
+                  {% if sel.vision_fix %}
+                  <div class="vision-fix">🤖 <strong>AI-bedömning:</strong> {{ sel.vision_fix | safe }}</div>
+                  {% endif %}
+                  {% if sel.selector %}
+                  <div class="el-actions" data-selector="{{ sel.selector | e }}"
+                       data-html="{{ sel.html | replace('"', '&quot;') | replace("'","&#39;") | replace("\\","\\\\") }}">
+                    <button class="el-btn" onclick="copySel(this)">Kopiera selektor</button>
+                    <button class="el-btn" onclick="copyConsole(this)">Kopiera konsolkommando</button>
+                    <button class="el-btn" onclick="toggleHtml(this)">Visa HTML</button>
+                    <button class="el-btn" onclick="toggleSelector(this)">Visa selektor</button>
+                  </div>
+                  <div class="el-html-hidden" style="display:none"
+                       onclick="copyElFromHidden(this)"
+                       title="Klicka för att kopiera HTML"></div>
+                  <div class="el-selector">{{ sel.selector | e }}</div>
+                  {% endif %}
+                  <div class="el-status-row">
+                    <button class="el-status-btn" onclick="setElStatus(this, 'fixed')"   title="Markera detta element som åtgärdat">✅ Åtgärdad</button>
+                    <button class="el-status-btn" onclick="setElStatus(this, 'wontfix')" title="Markera detta element som ej relevant">🚫 Ej relevant</button>
+                    <span class="el-resolved-label" style="display:none"></span>
+                  </div>
+                </li>
+                {% endfor %}
+              </ul>
+
+              {% if issue.selectors|length > 5 %}
+              <button class="show-more-btn"
+                      onclick="toggleExtra(this)"
+                      data-total="{{ issue.selectors|length }}">
+                Visa alla {{ issue.selectors|length }} element ▼
+              </button>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+
+        <div class="no-results" id="no-results-{{ loop.index0 }}" style="display:none">
+          <div class="icon">🔍</div>
+          <strong>Inga problem matchar det valda filtret.</strong>
+          <p>Prova ett annat filter eller välj "Alla".</p>
+        </div>
+      </div>
+      {% endfor %}
+
+      {% if not digg_groups %}
+      <div class="all-clear">
+        <div class="icon">✅</div>
+        <h2>Inga automatiskt detekterade problem!</h2>
+        <p>Automatisk granskning täcker ca 30–40 % av WCAG-brott. Manuell granskning rekommenderas alltid som komplement.</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="disclaimer">
+      Problem identifierade av <strong>axe-core</strong>. Förklaringar genererade av AI baserat på officiell WCAG 2.2- och EAA-text via RAG.
+      Automatisk granskning täcker ca 30–40 % av WCAG-brott — manuell granskning rekommenderas alltid som komplement.
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
 </body>
 </html>

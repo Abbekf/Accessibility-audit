@@ -408,6 +408,12 @@
       }
     };
 
+    window.addEventListener('message', (e) => {
+      if (e.data && e.data.type === 'a11y-diag') {
+        console.log('[a11y-diag from iframe]', JSON.stringify(e.data));
+      }
+    });
+
   </script>
 </body>
 </html>

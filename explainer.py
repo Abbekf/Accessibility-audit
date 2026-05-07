@@ -220,7 +220,7 @@ async def _call_openai(model: str, user_prompt: str, screenshot_b64: str = "") -
     if screenshot_b64:
         content.append({
             "type": "image_url",
-            "image_url": {"url": f"data:image/png;base64,{screenshot_b64}", "detail": "low"},
+            "image_url": {"url": f"data:image/jpeg;base64,{screenshot_b64}", "detail": "low"},
         })
     response = await _openai_client.chat.completions.create(
         model=model,
@@ -243,7 +243,7 @@ async def _call_claude(model: str, user_prompt: str, screenshot_b64: str = "") -
     if screenshot_b64:
         content.append({
             "type": "image",
-            "source": {"type": "base64", "media_type": "image/png", "data": screenshot_b64},
+            "source": {"type": "base64", "media_type": "image/jpeg", "data": screenshot_b64},
         })
     response = await client.messages.create(
         model=model,
@@ -267,7 +267,7 @@ async def _call_gemini(model: str, user_prompt: str, screenshot_b64: str = "") -
     parts: list = [user_prompt]
     if screenshot_b64:
         parts.append({
-            "mime_type": "image/png",
+            "mime_type": "image/jpeg",
             "data": _base64.b64decode(screenshot_b64),
         })
     loop = __import__('asyncio').get_event_loop()

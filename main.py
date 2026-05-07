@@ -213,8 +213,9 @@ async def scan_site(request: ScanRequest) -> Response:
 
     except Exception as e:
         import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Fel under sajt-granskning: {e}")
+        tb = traceback.format_exc()
+        print(tb)
+        raise HTTPException(status_code=500, detail=f"Fel under sajt-granskning: {e}\n\n{tb}")
 
 
 @app.post("/presentation")

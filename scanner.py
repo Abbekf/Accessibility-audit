@@ -171,7 +171,7 @@ async def _scan_url_async(url: str) -> List[A11yIssue]:
                                     "width":  min(w, vp["width"]),
                                     "height": min(h, vp["height"]),
                                 }
-                                img_bytes = await page.screenshot(clip=clip, timeout=4000)
+                                img_bytes = await page.screenshot(clip=clip, type="jpeg", quality=75, timeout=4000)
                                 shot = base64.b64encode(img_bytes).decode()
                         except Exception:
                             shot = ""
@@ -185,6 +185,22 @@ async def _scan_url_async(url: str) -> List[A11yIssue]:
                         selector = first_target[0]
                         locator = page.locator(selector).first
                         await locator.scroll_into_view_if_needed(timeout=2000)
+                        bbox = await locator.bounding_box()
+                        vp = page.viewport_size or {"width": 1280, "height": 800}
+                        if bbox:
+                            # Clip runt elementet (max 900×500) — undviker jättestora PNG:er
+                            cx = bbox["x"] + bbox["width"] / 2
+                            cy = bbox["y"] + bbox["height"] / 2
+                            cw = min(900, vp["width"])
+                            ch = min(500, vp["height"])
+                            clip_ctx = {
+                                "x": max(0, cx - cw / 2),
+                                "y": max(0, cy - ch / 2),
+                                "width": cw,
+                                "height": ch,
+                            }
+                        else:
+                            clip_ctx = None
                         await page.evaluate(
                             """sel => {
                                 const el = document.querySelector(sel);
@@ -196,7 +212,10 @@ async def _scan_url_async(url: str) -> List[A11yIssue]:
                             }""",
                             selector,
                         )
-                        img_bytes = await page.screenshot(timeout=4000)
+                        shot_kwargs = dict(type="jpeg", quality=70, timeout=4000)
+                        if clip_ctx:
+                            shot_kwargs["clip"] = clip_ctx
+                        img_bytes = await page.screenshot(**shot_kwargs)
                         screenshot_b64 = base64.b64encode(img_bytes).decode()
                         await page.evaluate(
                             """sel => {
