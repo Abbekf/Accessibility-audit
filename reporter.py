@@ -295,11 +295,14 @@ _DIGG_CATEGORIES = {
 
 
 def _digg_category(rule_id: str, wcag_ref: str) -> str:
+    # wcag_ref kommer in som "WCAG 1.1.1" — strippa "WCAG " så prefix-matchningen
+    # mot "1.1", "1.4.3" etc faktiskt fungerar.
+    ref_only = wcag_ref.replace("WCAG ", "").strip()
     for cat, meta in _DIGG_CATEGORIES.items():
         if rule_id in meta["rules"]:
             return cat
         for prefix in meta["wcag_prefix"]:
-            if wcag_ref.startswith(prefix):
+            if ref_only.startswith(prefix):
                 return cat
     return "Kod"
 
@@ -336,6 +339,7 @@ def _group_issues(items: List[ExplainedIssue]) -> list:
             label = _describe_element(item.issue.selector, item.issue.affected_html, rule_id, image_counters[rule_id])
             groups[key] = {
                 "rule_id": rule_id,
+                "card_key": key,
                 "wcag_reference": item.issue.wcag_reference,
                 "impact": effective_impact,
                 "plain_swedish": _md_to_html(item.plain_swedish),
@@ -360,6 +364,7 @@ def _group_issues(items: List[ExplainedIssue]) -> list:
             if key not in groups:
                 groups[key] = {
                     "rule_id": rule_id,
+                    "card_key": key,
                     "wcag_reference": item.issue.wcag_reference,
                     "impact": item.issue.impact,
                     "plain_swedish": _md_to_html(item.plain_swedish),
@@ -406,16 +411,21 @@ def _group_by_digg(groups: list) -> list:
 def generate_presentation_html(url: str, items: List[ExplainedIssue]) -> str:
     """Genererar en slide-presentation i HTML-format."""
     grouped = _group_issues(items)
+    # count_by_impact räknar individuella berörda element (issue.count per grupp),
+    # inte antal grupper — så siffran matchar "X träffar"-pillerna i kortrapporten.
     count_by_impact = {
-        "critical": sum(1 for g in grouped if g["impact"] == "critical"),
-        "serious":  sum(1 for g in grouped if g["impact"] == "serious"),
-        "moderate": sum(1 for g in grouped if g["impact"] == "moderate"),
-        "minor":    sum(1 for g in grouped if g["impact"] == "minor"),
+        "critical": sum(g["count"] for g in grouped if g["impact"] == "critical"),
+        "serious":  sum(g["count"] for g in grouped if g["impact"] == "serious"),
+        "moderate": sum(g["count"] for g in grouped if g["impact"] == "moderate"),
+        "minor":    sum(g["count"] for g in grouped if g["impact"] == "minor"),
     }
     digg_groups = _group_by_digg(grouped)
 
     from urllib.parse import urlparse
     site_name = urlparse(url).netloc.replace("www.", "").split(".")[0].capitalize()
+
+    total_elements = sum(g["count"] for g in grouped)
+    unique_rule_ids = len({g["rule_id"] for g in grouped})
 
     template = _jinja_env.get_template("presentation.html")
     return template.render(
@@ -423,8 +433,8 @@ def generate_presentation_html(url: str, items: List[ExplainedIssue]) -> str:
         site_name=site_name,
         scan_date=datetime.now().strftime("%Y-%m-%d %H:%M"),
         digg_groups=digg_groups,
-        total_issues=len(grouped),
-        unique_rules=len(grouped),
+        total_issues=total_elements,
+        unique_rules=unique_rule_ids,
         num_categories=len(digg_groups),
         count_by_impact=count_by_impact,
     )

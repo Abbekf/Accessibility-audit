@@ -16,6 +16,7 @@ LLM:en får bara se den här datan, den hittar aldrig på egna fel.
 
 import asyncio
 import base64
+import re
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -154,8 +155,7 @@ async def _scan_url_async(url: str) -> tuple[List[A11yIssue], str]:
         # Vi översätter dem till vårt egna format
         screenshots_taken = 0
         for violation in results.get("violations", []):
-            wcag_tags = [t for t in violation.get("tags", []) if t.startswith("wcag")]
-            wcag_ref = _format_wcag(wcag_tags[0]) if wcag_tags else "Okänd"
+            wcag_ref = _pick_wcag_reference(violation.get("tags", []))
 
             rule_id = violation.get("id", "")
             nodes = violation.get("nodes", [])
@@ -323,14 +323,28 @@ async def _fetch_site_logo(page) -> str:
     return ""
 
 
+# axe-core listar alltid level-tag (wcag2a, wcag22aa, …) FÖRE kriterietaggen
+# (wcag111, wcag1410). Vi behöver kriterietaggen — den ser ut som "wcag" + 3-4
+# siffror där sista siffran kan vara tvåsiffrig (ex. wcag1410 = WCAG 1.4.10).
+_WCAG_CRITERION_RE = re.compile(r"^wcag(\d)(\d)(\d{1,2})$")
+
+
+def _pick_wcag_reference(tags: list) -> str:
+    """
+    Väljer den mest specifika WCAG-kriterietaggen och formaterar den.
+    Hoppar över level-taggar (wcag2a, wcag22aa, …) som inte pekar på ett kriterium.
+    """
+    for tag in tags:
+        m = _WCAG_CRITERION_RE.match(tag)
+        if m:
+            return f"WCAG {m.group(1)}.{m.group(2)}.{int(m.group(3))}"
+    # Fallback: ingen kriterietagg — visa nåt vettigt om det fanns en wcag-tagg
+    wcag_only = [t for t in tags if t.startswith("wcag")]
+    if wcag_only:
+        return f"WCAG ({wcag_only[0]})"
+    return "Okänd"
+
+
 def _format_wcag(tag: str) -> str:
-    """
-    Formaterar 'wcag111' till 'WCAG 1.1.1' för snyggare visning.
-    """
-    # Plocka ut siffrorna efter "wcag"
-    nums = tag.replace("wcag", "")
-    if len(nums) == 3:
-        return f"WCAG {nums[0]}.{nums[1]}.{nums[2]}"
-    elif len(nums) == 2:
-        return f"WCAG {nums[0]}.{nums[1]}"
-    return f"WCAG ({tag})"
+    """Bakåtkompatibel hjälpare som format 'wcag111' → 'WCAG 1.1.1'."""
+    return _pick_wcag_reference([tag])

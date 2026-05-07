@@ -1064,18 +1064,19 @@ function saveElStatuses(s) {
 }
 
 // ── Status per issue card ──
+// Vi nycklar mot card_key (unik per kort) — tidigare användes rule_id som
+// kollidade så att flera bild-kort med samma regel delade status.
 function setStatus(btn, newStatus) {
   const card   = btn.closest('.issue-card');
-  const ruleId = card.dataset.rule;
+  const key    = card.dataset.cardKey || card.dataset.rule;
   const statuses = loadStatuses();
-  const current  = statuses[ruleId];
+  const current  = statuses[key];
 
-  // Toggle off if already set
   if (current === newStatus) {
-    delete statuses[ruleId];
+    delete statuses[key];
     applyCardStatus(card, null);
   } else {
-    statuses[ruleId] = newStatus;
+    statuses[key] = newStatus;
     applyCardStatus(card, newStatus);
   }
   saveStatuses(statuses);
@@ -1272,8 +1273,8 @@ function updateNavBadges(filter) {
 function restoreStatuses() {
   const statuses = loadStatuses();
   document.querySelectorAll('.issue-card').forEach(card => {
-    const ruleId = card.dataset.rule;
-    if (statuses[ruleId]) applyCardStatus(card, statuses[ruleId]);
+    const key = card.dataset.cardKey || card.dataset.rule;
+    if (statuses[key]) applyCardStatus(card, statuses[key]);
   });
   updateProgress();
   applyResolvedVisibility();
@@ -1967,6 +1968,7 @@ document.addEventListener('DOMContentLoaded', () => {
         {% for issue in cat.issues %}
         <div class="issue-card" data-impact="{{ issue.impact }}"
              data-rule="{{ issue.rule_id }}"
+             data-card-key="{{ issue.card_key }}"
              data-search="{{ (issue.plain_swedish ~ ' ' ~ issue.rule_id ~ ' ' ~ (issue.wcag_reference or '') ~ ' ' ~ issue.selectors|map(attribute='label')|join(' ')) | lower | striptags | replace('"', '') | replace("'", '') }}">
 
           <div class="card-summary" onclick="toggleCard(this.parentElement)">
@@ -2041,7 +2043,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
               <ul class="el-list">
                 {% for sel in issue.selectors %}
-                {% set el_key = issue.rule_id ~ '::' ~ loop.index %}
+                {% set el_key = issue.card_key ~ '::' ~ loop.index %}
                 <li class="el-item{% if loop.index > 5 %} el-extra{% endif %}"
                     data-el-key="{{ el_key }}"
                     {% if loop.index > 5 %}style="display:none"{% endif %}>
