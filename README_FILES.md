@@ -12,7 +12,9 @@ Detaljerad beskrivning av alla viktiga filer och mappar, deras syfte, beroenden 
 
 **Viktiga endpoints:**
 - `/` – Serverar ui.html (webbgränssnittet)
-- `/scan` – Tar emot URL, provider och modell, kör hela granskningsflödet och returnerar en HTML-rapport
+- `/scan` – Tar emot URL, provider och modell, kör hela granskningsflödet för en enskild sida och returnerar en HTML-rapport
+- `/scan-site` – Crawlar hela sajten, skannar alla sidor och returnerar en samlad rapport
+- `/presentation` – Returnerar den pre-genererade presentationen från senaste skanningen
 
 **Flöde:**
 1. Tar emot `url`, `provider` och `model` från klienten
@@ -21,7 +23,7 @@ Detaljerad beskrivning av alla viktiga filer och mappar, deras syfte, beroenden 
 4. Kör `explain_issue()` parallellt för unika regeltyper
 5. Genererar HTML-rapport via `generate_html()`
 
-**Beroenden:** scanner.py, explainer.py, reporter.py, favicon_route.py
+**Beroenden:** scanner.py, explainer.py, reporter.py, crawler.py, favicon_route.py
 
 ---
 
@@ -65,7 +67,7 @@ Detaljerad beskrivning av alla viktiga filer och mappar, deras syfte, beroenden 
 
 **Viktigt:**
 - Prompten är strikt: LLM:en får ENDAST använda tillhandahållen lagtext
-- `OPENAI_API_KEY` krävs alltid för RAG-embeddings, oavsett vald LLM
+- RAG används alltid — systemet väljer automatiskt embedding-provider baserat på tillgängliga API-nycklar
 
 **Beroenden:** openai, anthropic, google-generativeai, pydantic, retriever.py, scanner.py
 
@@ -98,26 +100,51 @@ Detaljerad beskrivning av alla viktiga filer och mappar, deras syfte, beroenden 
 **Steg:**
 1. Tar emot ett `A11yIssue`
 2. Bygger en sökfråga av felbeskrivningen
-3. Skapar en embedding via OpenAI
-4. Söker i ChromaDB efter närmaste textpassager
+3. Väljer embedding-provider automatiskt baserat på tillgängliga API-nycklar (OpenAI → Gemini → lokal ONNX)
+4. Söker i ChromaDB i den provider-specifika collectionen
 5. Returnerar `RetrievedChunk`-objekt till explainer.py
 
-**Beroenden:** chromadb, openai, pydantic, scanner.py
+**Embedding-providers:**
+- `openai` → `text-embedding-3-small`, collection `a11y_laws_openai`
+- `gemini` → `text-embedding-004`, collection `a11y_laws_gemini`
+- `local` → ONNX MiniLM-L6-v2 (inbyggd i chromadb, kräver ingen extra nyckel), collection `a11y_laws_local`
+
+**Viktigt:** Om du byter vilken API-nyckel du använder måste du köra om `python indexer.py`
+så att vektordatabasen byggs om med samma embedding-modell som retriever använder.
+
+**Beroenden:** chromadb, openai (valfritt), google-generativeai (valfritt), pydantic, scanner.py
 
 ---
 
 ### indexer.py
-**Roll:** Bygger upp vektordatabasen (ChromaDB) med WCAG 2.2 och EAA-texter. Körs EN gång vid setup.
+**Roll:** Bygger upp vektordatabasen (ChromaDB) med WCAG 2.2 och EAA-texter. Körs EN gång vid setup, eller när du byter API-nyckel.
 
 **Steg:**
 1. Laddar ner WCAG 2.2 från W3C
 2. Laddar ner EAA (Lag 2023:254) från riksdagen.se
 3. Delar upp texterna i chunks (~800 tecken med 100 teckens överlapp)
-4. Skickar varje chunk till OpenAI för embedding
-5. Sparar allt i ChromaDB
-6. Har fallback med seed-chunks om nätet krånglar
+4. Väljer embedding-provider automatiskt (OpenAI → Gemini → lokal ONNX)
+5. Skapar embeddings och sparar i provider-specifik ChromaDB-collection
+6. Har fallback med 55 seed-chunks om nätet krånglar — täcker alla axe-core-regler
 
-**Beroenden:** chromadb, openai, httpx, beautifulsoup4
+**Embedding-providers:** samma prioritetsordning och collections som retriever.py.
+
+**Beroenden:** chromadb, openai (valfritt), google-generativeai (valfritt), httpx, beautifulsoup4
+
+---
+
+### crawler.py
+**Roll:** Crawlar en hel sajt och samlar in alla unika interna sidor för granskning.
+
+**Steg:**
+1. Startar från en rot-URL
+2. Följer interna länkar rekursivt (samma domän)
+3. Undviker dubbletter och externa URL:er
+4. Returnerar en lista med alla hittade sidor
+
+Används av `/scan-site`-endpointen i main.py för att granska hela sajter på en gång.
+
+**Beroenden:** playwright (eller httpx), pydantic
 
 ---
 
@@ -133,26 +160,30 @@ Detaljerad beskrivning av alla viktiga filer och mappar, deras syfte, beroenden 
 ### requirements.txt
 Lista på alla Python-paket som behövs. Viktiga paket:
 - `playwright` — headless browser för axe-core
-- `openai` — embeddings och GPT-modeller
+- `openai` — embeddings (valfritt) och GPT-modeller
 - `anthropic` — Claude-modeller
-- `google-generativeai` — Gemini-modeller
-- `chromadb` — vektordatabas för RAG
+- `google-generativeai` — Gemini-modeller och embeddings (valfritt)
+- `chromadb` — vektordatabas för RAG (inkluderar lokal ONNX-embeddingmodell)
 - `fastapi` + `uvicorn` — webb-API
 - `jinja2` — HTML-mallrendering
 
 ### .env
 API-nycklar. Ska **aldrig** checkas in i versionshantering.
-- `OPENAI_API_KEY` — krävs alltid (embeddings + valfritt GPT)
-- `ANTHROPIC_API_KEY` — krävs för Claude
-- `GEMINI_API_KEY` — krävs för Gemini
+- `OPENAI_API_KEY` — för OpenAI GPT-modeller och OpenAI-embeddings (valfritt)
+- `ANTHROPIC_API_KEY` — för Claude-modeller; lokal ONNX-embedding används automatiskt om bara denna nyckel finns
+- `GEMINI_API_KEY` — för Gemini-modeller och Gemini-embeddings (valfritt)
+
+> Du behöver bara **en** nyckel. Systemet väljer rätt embedding-provider automatiskt.
+> Om du byter nyckel: kör om `python indexer.py`.
 
 ### ui.html
 Webbaserat gränssnitt med:
 - URL-inmatningsfält
+- Knappar för att granska en sida eller crawla hela sajten
 - Dropdown för LLM-provider (OpenAI / Claude / Gemini)
 - Dropdown för specifik modell (uppdateras dynamiskt per provider)
 - Rapport visas inbäddad i sidan
-- Knappar för helskärm, ladda ner och spara
+- Knappar för att skapa rapport (PDF) och presentation
 
 ---
 
@@ -160,9 +191,11 @@ Webbaserat gränssnitt med:
 
 ### templates/
 - **report.html** — Interaktiv HTML-rapportmall. Innehåller sidebar, filter, sökning, skärmdumpar och utvecklarverktyg (kopiera selektor/konsolkommando).
+- **presentation.html** — Presentationsmall för slidshow-vy av granskningsresultaten.
 
 ### chroma_db/
 Vektordatabasen skapad av `indexer.py`. Innehåller embeddings och textpassager från WCAG 2.2 och EAA.
+Innehåller separata collections per embedding-provider (`a11y_laws_openai`, `a11y_laws_gemini`, `a11y_laws_local`).
 
 ### __pycache__/
 Python-cachefiler. Ignoreras av git.
@@ -173,13 +206,14 @@ Python-cachefiler. Ignoreras av git.
 
 ```
 ui.html (användaren väljer URL + LLM)
-    ↓ POST /scan {url, provider, model}
+    ↓ POST /scan eller /scan-site {url, provider, model}
 main.py
+    ├── crawler.py (vid /scan-site: crawlar alla sidor)
     ↓
 scanner.py → axe-core → A11yIssue[] (med kontextskärmdumpar)
     ↓ deduplicering per rule_id
 explainer.py (en förklaring per regeltyp)
-    ├── retriever.py → chroma_db/ (hämtar WCAG/EAA-text)
+    ├── retriever.py → chroma_db/ (hämtar WCAG/EAA-text via auto-vald embedding)
     └── openai / claude / gemini (förklarar på svenska)
     ↓
 reporter.py → templates/report.html (HTML med utvecklarverktyg)

@@ -125,97 +125,484 @@ def fetch_eaa() -> str:
 # ---------------------------------------------------------------------------
 
 SEED_CHUNKS = [
+    # ── Bilder & media ──────────────────────────────────────────────────────
     {
-        "source": "WCAG 2.2",
-        "reference": "1.1.1",
+        "source": "WCAG 2.2", "reference": "1.1.1",
         "text": "Success Criterion 1.1.1 Non-text Content (Level A): "
                 "Allt icke-textinnehåll som presenteras för användaren har "
-                "ett textalternativ som tjänar samma syfte. Undantag: "
-                "dekorativa bilder, formatering, osynliga element ska markeras "
-                "så hjälpmedel kan ignorera dem (t.ex. tom alt-text alt=\"\").",
+                "ett textalternativ som tjänar samma syfte. Dekorativa bilder "
+                "ska markeras med alt=\"\" så hjälpmedel kan ignorera dem. "
+                "Bilder med informationsinnehåll ska ha beskrivande alt-text. "
+                "Axe-core regel: image-alt, role-img-alt, svg-img-alt.",
     },
+    # ── Struktur & semantik ─────────────────────────────────────────────────
     {
-        "source": "WCAG 2.2",
-        "reference": "1.3.1",
+        "source": "WCAG 2.2", "reference": "1.3.1",
         "text": "Success Criterion 1.3.1 Info and Relationships (Level A): "
-                "Information, struktur och relationer som förmedlas via "
-                "presentation kan bestämmas programmatiskt eller finns "
-                "tillgängliga som text. Rubriker ska märkas som rubriker "
-                "(h1-h6), listor som listor (ul/ol/li), tabeller som tabeller.",
+                "Information, struktur och relationer som förmedlas via presentation "
+                "kan bestämmas programmatiskt. Rubriker ska märkas h1–h6, listor "
+                "som ul/ol/li, tabeller med th/caption. Formulärelement ska ha "
+                "associerade label-element. Axe-core: label, list, listitem, "
+                "definition-list, table-duplicate-name.",
     },
     {
-        "source": "WCAG 2.2",
-        "reference": "1.4.3",
+        "source": "WCAG 2.2", "reference": "1.3.5",
+        "text": "Success Criterion 1.3.5 Identify Input Purpose (Level AA): "
+                "Syftet med formulärfält som samlar in information om användaren "
+                "kan bestämmas programmatiskt. Använd autocomplete-attribut med "
+                "korrekt värde, t.ex. autocomplete=\"name\", autocomplete=\"email\". "
+                "Axe-core regel: autocomplete-valid.",
+    },
+    # ── Landmarks & sidstruktur ─────────────────────────────────────────────
+    {
+        "source": "WCAG 2.2", "reference": "1.3.6",
+        "text": "Success Criterion 1.3.6 Identify Purpose (Level AAA): "
+                "I innehåll som implementeras med märkspråk kan syftet med "
+                "användargränssnittskomponenter, ikoner och regioner bestämmas "
+                "programmatiskt. Landmarks som <main>, <nav>, <header>, <footer>, "
+                "<aside>, <section> med aria-label hjälper skärmläsare att förstå "
+                "sidans struktur.",
+    },
+    {
+        "source": "WCAG 2.2", "reference": "2.4.1",
+        "text": "Success Criterion 2.4.1 Bypass Blocks (Level A): Det finns en "
+                "mekanism för att hoppa förbi block av innehåll som upprepas på "
+                "flera sidor. Implementeras med skip-links eller korrekt användning "
+                "av landmarks: <main> för huvudinnehåll, <nav> för navigering, "
+                "<header> och <footer> för sidhuvud/sidfot. Alla regioner av "
+                "innehåll bör omges av landmark-element. Axe-core: bypass, "
+                "landmark-one-main, region.",
+    },
+    {
+        "source": "WCAG 2.2", "reference": "2.4.1 – landmark-one-main",
+        "text": "Axe-core regel 'landmark-one-main': Sidan saknar ett <main>-landmärke. "
+                "Varje sida ska ha exakt ett <main>-element som omsluter sidans "
+                "primära innehåll. Skärmläsaranvändare navigerar med landmarks för "
+                "att snabbt hoppa till rätt del av sidan. Utan <main> tvingas "
+                "användaren lyssna igenom hela sidan. WCAG 2.4.1 (Level A).",
+    },
+    {
+        "source": "WCAG 2.2", "reference": "2.4.1 – region",
+        "text": "Axe-core regel 'region': Allt sidinnehåll bör finnas inom ett "
+                "landmark-element. Landmark-element är: <main>, <nav>, <header> "
+                "(som barn till body), <footer> (som barn till body), <aside>, "
+                "<section aria-label=\"...\">, <form aria-label=\"...\">, eller "
+                "element med ARIA-roller main, navigation, banner, contentinfo, "
+                "complementary, region, form, search. Innehåll utanför landmarks "
+                "är svårt att hitta för skärmläsaranvändare. WCAG 2.4.1 (Level A).",
+    },
+    {
+        "source": "WCAG 2.2", "reference": "2.4.1 – landmark-unique",
+        "text": "Axe-core regel 'landmark-unique': Landmark-element av samma typ "
+                "måste ha unika tillgängliga namn om de förekommer flera gånger. "
+                "Exempel: om sidan har två <nav>-element ska de särskiljas med "
+                "aria-label, t.ex. <nav aria-label=\"Huvudnavigering\"> och "
+                "<nav aria-label=\"Sidfot-navigering\">. WCAG 2.4.1 (Level A).",
+    },
+    # ── Rubriker ────────────────────────────────────────────────────────────
+    {
+        "source": "WCAG 2.2", "reference": "2.4.6",
+        "text": "Success Criterion 2.4.6 Headings and Labels (Level AA): "
+                "Rubriker och etiketter beskriver ämne eller syfte. Rubriknivåer "
+                "ska vara logiskt ordnade: h1 för sidans huvudtitel, h2 för "
+                "sektioner, h3 för undersektioner. Rubriknivåer ska inte hoppas "
+                "över (t.ex. h1 direkt till h3). Axe-core: heading-order, "
+                "page-has-heading-one.",
+    },
+    {
+        "source": "WCAG 2.2", "reference": "2.4.2",
+        "text": "Success Criterion 2.4.2 Page Titled (Level A): Webbsidor har "
+                "titlar som beskriver ämne eller syfte. Sätt en beskrivande "
+                "<title> i HTML-headern. Axe-core: document-title.",
+    },
+    # ── Färg & kontrast ─────────────────────────────────────────────────────
+    {
+        "source": "WCAG 2.2", "reference": "1.4.3",
         "text": "Success Criterion 1.4.3 Contrast (Minimum) (Level AA): "
-                "Den visuella presentationen av text och bilder av text har "
-                "ett kontrastförhållande på minst 4.5:1, förutom för: stor text "
-                "(3:1), dekorativa element, och logotyper.",
+                "Text och bilder av text ska ha kontrastförhållande minst 4.5:1. "
+                "Stor text (18pt/14pt bold) kräver minst 3:1. Undantag: dekorativa "
+                "element, logotyper, inaktiva komponenter. Axe-core: color-contrast.",
     },
     {
-        "source": "WCAG 2.2",
-        "reference": "2.1.1",
+        "source": "WCAG 2.2", "reference": "1.4.11",
+        "text": "Success Criterion 1.4.11 Non-text Contrast (Level AA): "
+                "Visuella komponenter i användargränssnittet och grafiska objekt "
+                "ska ha kontrastförhållande minst 3:1 mot angränsande färger. "
+                "Gäller knappar, fält, fokusindikatorer, ikoner med informations­innehåll.",
+    },
+    # ── Tangentbord & fokus ─────────────────────────────────────────────────
+    {
+        "source": "WCAG 2.2", "reference": "2.1.1",
         "text": "Success Criterion 2.1.1 Keyboard (Level A): Alla funktioner "
-                "är tillgängliga via tangentbord, utan att kräva specifik timing "
-                "för enskilda tangenttryckningar. Undantag: när funktionen "
-                "kräver input som beror på rörelsens bana.",
+                "är tillgängliga via tangentbord. Interaktiva element måste kunna "
+                "nås och aktiveras med Tab, Shift+Tab, Enter och Mellanslag. "
+                "Axe-core: keyboard, scrollable-region-focusable.",
     },
     {
-        "source": "WCAG 2.2",
-        "reference": "2.4.4",
-        "text": "Success Criterion 2.4.4 Link Purpose (Level A): Syftet med "
-                "varje länk kan bestämmas från länktexten ensam, eller från "
-                "länktexten tillsammans med dess programmatiskt bestämda kontext. "
-                "Undvik 'klicka här' och 'läs mer' utan kontext.",
+        "source": "WCAG 2.2", "reference": "2.4.3",
+        "text": "Success Criterion 2.4.3 Focus Order (Level A): Om en webbsida "
+                "kan navigeras sekventiellt och navigeringssekvensen påverkar "
+                "mening eller funktion, ska fokuserbara komponenter ta emot fokus "
+                "i en ordning som bevarar mening och funktion. Undvik positiva "
+                "tabindex-värden. Axe-core: focus-order-semantics, tabindex.",
     },
     {
-        "source": "WCAG 2.2",
-        "reference": "3.1.1",
+        "source": "WCAG 2.2", "reference": "2.4.7",
+        "text": "Success Criterion 2.4.7 Focus Visible (Level AA): Alla "
+                "tangentbordsfokusbara användargränssnittskomponenter har ett "
+                "synligt fokusläge. Ta inte bort outline med outline:none eller "
+                "outline:0 utan att ersätta med en tydlig alternativ fokusindikator.",
+    },
+    # ── Formulär ────────────────────────────────────────────────────────────
+    {
+        "source": "WCAG 2.2", "reference": "1.3.1 – formuläretikett",
+        "text": "Axe-core regler 'label', 'select-name': Formulärfält måste ha "
+                "ett programmatiskt kopplat etikettnamn. Metoder: "
+                "1) <label for=\"id\">Text</label> kopplat till fältets id. "
+                "2) aria-label=\"beskrivning\" direkt på fältet. "
+                "3) aria-labelledby=\"id-på-etikett\". "
+                "Utan etikett vet inte skärmläsare vad fältet handlar om. "
+                "WCAG 1.3.1 och 4.1.2 (Level A).",
+    },
+    # ── ARIA & kod ──────────────────────────────────────────────────────────
+    {
+        "source": "WCAG 2.2", "reference": "4.1.2",
+        "text": "Success Criterion 4.1.2 Name, Role, Value (Level A): För alla "
+                "användargränssnittskomponenter kan namn och roll bestämmas "
+                "programmatiskt. Använd semantisk HTML (button, a, input, select) "
+                "eller korrekt ARIA (role, aria-label, aria-expanded, aria-hidden). "
+                "Axe-core: button-name, aria-required-attr, aria-roles, "
+                "aria-valid-attr, aria-valid-attr-value, aria-hidden-focus.",
+    },
+    {
+        "source": "WCAG 2.2", "reference": "4.1.1",
+        "text": "Success Criterion 4.1.1 Parsing (Level A): I innehåll som "
+                "implementerats med märkspråk har element kompletta start- och "
+                "sluttagar, är korrekt nästlade, har inga dubblerade attribut, "
+                "och alla id-värden är unika. Axe-core: duplicate-id, "
+                "duplicate-id-active, duplicate-id-aria.",
+    },
+    # ── Språk ────────────────────────────────────────────────────────────────
+    {
+        "source": "WCAG 2.2", "reference": "3.1.1",
         "text": "Success Criterion 3.1.1 Language of Page (Level A): Det "
                 "mänskliga språket på varje webbsida kan bestämmas programmatiskt. "
-                "Sätt lang-attribut på html-elementet, t.ex. <html lang=\"sv\">.",
+                "Sätt lang-attribut på html-elementet, t.ex. <html lang=\"sv\">. "
+                "Axe-core: html-has-lang, html-lang-valid.",
+    },
+    # ── Storlek & zoom ───────────────────────────────────────────────────────
+    {
+        "source": "WCAG 2.2", "reference": "1.4.4",
+        "text": "Success Criterion 1.4.4 Resize text (Level AA): Text kan "
+                "storleksändras upp till 200 procent utan hjälpmedelsteknik utan "
+                "att innehåll eller funktionalitet förloras. Undvik att blockera "
+                "zoom med <meta name=\"viewport\" content=\"user-scalable=no\">. "
+                "Axe-core: meta-viewport.",
     },
     {
-        "source": "WCAG 2.2",
-        "reference": "4.1.2",
-        "text": "Success Criterion 4.1.2 Name, Role, Value (Level A): För alla "
-                "användargränssnittskomponenter, inklusive formulärelement, "
-                "länkar och komponenter genererade av skript, kan namn och roll "
-                "bestämmas programmatiskt. Använd korrekt HTML (button, a, input) "
-                "eller korrekta ARIA-roller.",
+        "source": "WCAG 2.2", "reference": "2.5.8",
+        "text": "Success Criterion 2.5.8 Target Size (Minimum) (Level AA): "
+                "Klickytan för pekarinmatning är minst 24x24 CSS-pixlar. "
+                "Undantag: inline-länkar i löptext, element där storleken bestäms "
+                "av webbläsaren, och element med tillräckligt avstånd. "
+                "Axe-core: target-size.",
     },
+    # ── Länkar ───────────────────────────────────────────────────────────────
     {
-        "source": "EAA / LPTT",
-        "reference": "Lag 2023:254 §4",
+        "source": "WCAG 2.2", "reference": "2.4.4",
+        "text": "Success Criterion 2.4.4 Link Purpose (Level A): Syftet med "
+                "varje länk kan bestämmas från länktexten ensam eller länktexten "
+                "tillsammans med dess programmatiska kontext. Undvik 'klicka här', "
+                "'läs mer', 'mer info' utan kontext. Använd aria-label eller "
+                "aria-labelledby för att ge länken en unik beskrivning. "
+                "Axe-core: link-name.",
+    },
+    # ── EAA ─────────────────────────────────────────────────────────────────
+    {
+        "source": "EAA / LPTT", "reference": "Lag 2023:254 §4",
         "text": "Lagen gäller för ekonomiska aktörer som tillhandahåller "
-                "produkter eller tjänster som omfattas av lagen på marknaden i "
-                "Sverige. Tjänster omfattar bland annat: elektronisk kommunikation, "
-                "audiovisuella medietjänster, passagerartransporttjänster, "
-                "banktjänster för konsumenter, e-böcker, samt e-handel.",
+                "produkter eller tjänster på marknaden i Sverige. Tjänster "
+                "omfattar: elektronisk kommunikation, audiovisuella medietjänster, "
+                "passagerartransporttjänster, banktjänster för konsumenter, "
+                "e-böcker samt e-handel.",
     },
     {
-        "source": "EAA / LPTT",
-        "reference": "Lag 2023:254 §9",
+        "source": "EAA / LPTT", "reference": "Lag 2023:254 §9",
         "text": "Produkter och tjänster som omfattas av lagen ska uppfylla "
-                "tillgänglighetskraven. Kraven preciseras i bilaga I till "
-                "tillgänglighetsdirektivet (EU) 2019/882, och i praktiken "
-                "innebär det att webbplatser och mobila appar ska följa "
-                "WCAG 2.1 nivå AA.",
+                "tillgänglighetskraven i bilaga I till tillgänglighetsdirektivet "
+                "(EU) 2019/882. I praktiken innebär det att webbplatser och "
+                "mobila appar ska följa WCAG 2.1 nivå AA.",
     },
     {
-        "source": "EAA / LPTT",
-        "reference": "Lag 2023:254 §29",
-        "text": "Tillsynsmyndigheten får meddela de förelägganden och förbud "
-                "som behövs för att lagen ska följas. Ett beslut om föreläggande "
-                "eller förbud får förenas med vite. Tillsynsmyndighet för "
-                "e-handel är Post- och telestyrelsen (PTS).",
+        "source": "EAA / LPTT", "reference": "Lag 2023:254 §29",
+        "text": "Tillsynsmyndigheten får meddela förelägganden och förbud som "
+                "behövs för att lagen ska följas. Beslut får förenas med vite. "
+                "Tillsynsmyndighet för e-handel är Post- och telestyrelsen (PTS).",
     },
     {
-        "source": "EAA / LPTT",
-        "reference": "Undantag: mikroföretag",
-        "text": "Mikroföretag som tillhandahåller tjänster är undantagna från "
-                "kraven. Ett mikroföretag definieras som ett företag som "
-                "sysselsätter färre än 10 personer OCH vars årsomsättning eller "
-                "balansomslutning inte överstiger 2 miljoner euro.",
+        "source": "EAA / LPTT", "reference": "Undantag: mikroföretag",
+        "text": "Mikroföretag som tillhandahåller tjänster är undantagna. "
+                "Mikroföretag: färre än 10 anställda OCH årsomsättning eller "
+                "balansomslutning högst 2 miljoner euro.",
+    },
+
+    # ── Bilder: fler regler ─────────────────────────────────────────────────
+    {
+        "source": "WCAG 2.2", "reference": "1.1.1 – input-image-alt",
+        "text": "Axe-core regel input-image-alt: En <input type='image'> används "
+                "som knapp och saknar alt-text. Bilden fungerar som en knapp och "
+                "måste ha ett alt-attribut som beskriver knappens syfte, t.ex. "
+                "alt='Skicka formulär'. WCAG 1.1.1 (Level A).",
+    },
+    {
+        "source": "WCAG 2.2", "reference": "1.1.1 – svg-img-alt",
+        "text": "Axe-core regel svg-img-alt: Ett SVG-element med role='img' saknar "
+                "tillgängligt namn. Lägg till <title>Beskrivning</title> som första "
+                "barn i SVG-elementet, eller använd aria-label='Beskrivning' på "
+                "SVG-elementet. Om SVG:n är dekorativ: aria-hidden='true'. "
+                "WCAG 1.1.1 (Level A).",
+    },
+    {
+        "source": "WCAG 2.2", "reference": "1.1.1 – image-redundant-alt",
+        "text": "Axe-core regel image-redundant-alt: En bild har alt-text som "
+                "exakt upprepar omgivande länk- eller knapptext. Det orsakar att "
+                "skärmläsare läser samma information två gånger. Lösning: sätt "
+                "alt='' på bilden om länktexten redan beskriver syftet. "
+                "WCAG 1.1.1 (Level A).",
+    },
+
+    # ── Video & ljud ────────────────────────────────────────────────────────
+    {
+        "source": "WCAG 2.2", "reference": "1.2.2",
+        "text": "Success Criterion 1.2.2 Captions (Prerecorded) (Level A): "
+                "Textning tillhandahålls för allt förinspelat ljudinnehåll i "
+                "synkroniserade medier. Textning ska inkludera allt tal och "
+                "viktiga ljudeffekter. Axe-core: video-caption.",
+    },
+    {
+        "source": "WCAG 2.2", "reference": "1.2.1",
+        "text": "Success Criterion 1.2.1 Audio-only and Video-only (Prerecorded) "
+                "(Level A): För förinspelat ljud-bara-innehåll tillhandahålls ett "
+                "textalternativ. För förinspelat video-bara-innehåll tillhandahålls "
+                "ett textalternativ eller en ljudspår. Axe-core: audio-caption.",
+    },
+    {
+        "source": "WCAG 2.2", "reference": "1.2.5",
+        "text": "Success Criterion 1.2.5 Audio Description (Prerecorded) (Level AA): "
+                "Ljudbeskrivning tillhandahålls för allt förinspelat videoinnehåll "
+                "i synkroniserade medier. Axe-core: video-description.",
+    },
+    {
+        "source": "WCAG 2.2", "reference": "1.4.2",
+        "text": "Success Criterion 1.4.2 Audio Control (Level A): Om ljud spelas "
+                "upp automatiskt i mer än 3 sekunder ska det finnas en mekanism "
+                "för att pausa, stoppa eller justera volymen oberoende av systemets "
+                "volym. Axe-core: no-autoplay-audio.",
+    },
+
+    # ── Kontrast förhöjd ────────────────────────────────────────────────────
+    {
+        "source": "WCAG 2.2", "reference": "1.4.6",
+        "text": "Success Criterion 1.4.6 Contrast (Enhanced) (Level AAA): "
+                "Text och bilder av text ska ha kontrastförhållande minst 7:1. "
+                "Stor text (18pt/14pt bold) kräver minst 4.5:1. "
+                "Axe-core: color-contrast-enhanced.",
+    },
+
+    # ── Timing & animationer ────────────────────────────────────────────────
+    {
+        "source": "WCAG 2.2", "reference": "2.2.1",
+        "text": "Success Criterion 2.2.1 Timing Adjustable (Level A): För varje "
+                "tidsgräns som sätts av innehållet kan användaren stänga av, "
+                "justera eller förlänga tidsgränsen. Gäller sessionstimeouts och "
+                "automatiska omdirigeringar. Axe-core: meta-refresh, "
+                "timing-adjustable.",
+    },
+    {
+        "source": "WCAG 2.2", "reference": "2.2.2",
+        "text": "Success Criterion 2.2.2 Pause, Stop, Hide (Level A): För rörligt, "
+                "blinkande, rullande eller automatiskt uppdaterat innehåll finns "
+                "en mekanism för att pausa, stoppa eller dölja det. Gäller "
+                "karuseller, animationer och automatiskt uppdaterande nyhetsflöden. "
+                "Axe-core: pause-stop-hide.",
+    },
+
+    # ── Tangentbord: fler regler ────────────────────────────────────────────
+    {
+        "source": "WCAG 2.2", "reference": "2.1.2",
+        "text": "Success Criterion 2.1.2 No Keyboard Trap (Level A): Om "
+                "tangentbordsfokus kan flyttas till en komponent med tangentbordet "
+                "kan fokus också flyttas bort enbart med tangentbordet. Om det "
+                "krävs mer än standard piltangenter/Tab/Escape ska användaren "
+                "informeras. Axe-core: no-keyboard-trap.",
+    },
+    {
+        "source": "WCAG 2.2", "reference": "2.4.1 – accesskeys",
+        "text": "Axe-core regel accesskeys: Accesskey-värden måste vara unika. "
+                "Dubblerade accesskeys kan skapa konflikter i webbläsaren och "
+                "göra kortkommandon oförutsägbara för tangentbordsanvändare. "
+                "WCAG 2.1.1, 4.1.1 (Level A).",
+    },
+    {
+        "source": "WCAG 2.2", "reference": "2.1.1 – scrollable-region-focusable",
+        "text": "Axe-core regler scrollable-region-focusable och "
+                "scrolling-region-focusable: Ett element som kan scrollas "
+                "(overflow: auto/scroll) är inte nåbart med tangentbordet. "
+                "Lägg till tabindex='0' på det scrollbara elementet så att "
+                "tangentbordsanvändare kan nå och scrolla innehållet. "
+                "WCAG 2.1.1 (Level A).",
+    },
+
+    # ── Skip-links ──────────────────────────────────────────────────────────
+    {
+        "source": "WCAG 2.2", "reference": "2.4.1 – skip-link",
+        "text": "Axe-core regel skip-link: En skip-länk hittades men dess mål "
+                "finns inte eller är inte fokusbart. Skip-links används för att "
+                "hoppa förbi repetitivt navigeringsinnehåll. Länkmålet (t.ex. "
+                "#main-content) måste existera och vara fokusbart (ha tabindex='-1' "
+                "om det inte är ett naturligt fokusbart element). WCAG 2.4.1 (Level A).",
+    },
+
+    # ── Etikett kontra synlig text ──────────────────────────────────────────
+    {
+        "source": "WCAG 2.2", "reference": "2.5.3",
+        "text": "Success Criterion 2.5.3 Label in Name (Level A): För "
+                "användargränssnittskomponenter med etiketter som innehåller text "
+                "eller bilder av text ska det tillgängliga namnet innehålla den "
+                "synliga texten. En knapp med synlig text 'Skicka' ska ha "
+                "aria-label som innehåller 'Skicka', inte ett helt annat ord. "
+                "Axe-core: label-content-name-mismatch.",
+    },
+
+    # ── Länkändamål ─────────────────────────────────────────────────────────
+    {
+        "source": "WCAG 2.2", "reference": "2.4.9",
+        "text": "Success Criterion 2.4.9 Link Purpose (Link Only) (Level AAA): "
+                "En mekanism finns tillgänglig som gör det möjligt att identifiera "
+                "syftet med varje länk enbart från länktexten. Undvik identiska "
+                "länktexter som pekar på olika destinationer. "
+                "Axe-core: identical-links-same-purpose.",
+    },
+
+    # ── Ramtitlar ───────────────────────────────────────────────────────────
+    {
+        "source": "WCAG 2.2", "reference": "4.1.2 – frame-title",
+        "text": "Axe-core regel frame-title: Ett <iframe>- eller <frame>-element "
+                "saknar ett tillgängligt namnattribut. Lägg till title-attribut "
+                "med en beskrivning av ramens innehåll, t.ex. "
+                "<iframe title='Inbäddad karta'></iframe>. "
+                "WCAG 4.1.2 (Level A).",
+    },
+
+    # ── Nästlade interaktiva element ────────────────────────────────────────
+    {
+        "source": "WCAG 2.2", "reference": "4.1.2 – nested-interactive",
+        "text": "Axe-core regel nested-interactive: Interaktiva element är "
+                "nästlade inuti varandra, t.ex. en knapp inuti en länk eller "
+                "en länk inuti en knapp. Detta är ogiltigt HTML och skapar "
+                "oförutsägbart beteende för hjälpmedel. Flytta ut det inre "
+                "interaktiva elementet. WCAG 4.1.2 (Level A).",
+    },
+
+    # ── ARIA-dold body ──────────────────────────────────────────────────────
+    {
+        "source": "WCAG 2.2", "reference": "4.1.2 – aria-hidden-body",
+        "text": "Axe-core regel aria-hidden-body: Attributet aria-hidden='true' "
+                "har satts på <body>-elementet, vilket döljer hela sidan för "
+                "skärmläsare. Ta bort aria-hidden från body-elementet. Om en "
+                "modal är öppen, sätt aria-hidden='true' på allt UTOM modalen "
+                "med hjälp av en aria-modal-hanterare. WCAG 4.1.2 (Level A).",
+    },
+
+    # ── ARIA-roller och attribut ────────────────────────────────────────────
+    {
+        "source": "WCAG 2.2", "reference": "4.1.2 – aria-required-children",
+        "text": "Axe-core regel aria-required-children: Ett element med en "
+                "ARIA-roll saknar obligatoriska barn-element med korrekt roll. "
+                "T.ex. role='list' kräver barn med role='listitem', "
+                "role='tablist' kräver barn med role='tab'. "
+                "WCAG 4.1.2 (Level A).",
+    },
+    {
+        "source": "WCAG 2.2", "reference": "4.1.2 – aria-required-parent",
+        "text": "Axe-core regel aria-required-parent: Ett element med en "
+                "ARIA-roll saknar obligatoriskt förälder-element med korrekt roll. "
+                "T.ex. role='listitem' kräver förälder med role='list' eller "
+                "role='group', role='option' kräver förälder med role='listbox'. "
+                "WCAG 4.1.2 (Level A).",
+    },
+    {
+        "source": "WCAG 2.2", "reference": "4.1.2 – aria-roles",
+        "text": "Axe-core regel aria-roles: Ett element har en ARIA-roll som "
+                "är ogiltig, abstrakt eller inte tillåten på elementet. Använd "
+                "endast giltiga WAI-ARIA-roller (button, link, navigation, main, "
+                "dialog, alert, etc.) och se till att rollen passar elementtypen. "
+                "WCAG 4.1.2 (Level A).",
+    },
+    {
+        "source": "WCAG 2.2", "reference": "4.1.2 – aria-valid-attr",
+        "text": "Axe-core regel aria-valid-attr: Ett ARIA-attribut används som "
+                "inte finns i WAI-ARIA-specifikationen. Kontrollera stavningen "
+                "och använd enbart giltiga attribut som aria-label, "
+                "aria-labelledby, aria-describedby, aria-expanded, aria-hidden, "
+                "aria-live, aria-role, etc. WCAG 4.1.2 (Level A).",
+    },
+    {
+        "source": "WCAG 2.2", "reference": "4.1.2 – aria-valid-attr-value",
+        "text": "Axe-core regel aria-valid-attr-value: Ett ARIA-attribut har "
+                "ett ogiltigt värde. T.ex. aria-expanded='yes' är fel "
+                "(ska vara 'true'/'false'), aria-labelledby='id-som-inte-finns' "
+                "refererar till ett element som inte existerar. "
+                "WCAG 4.1.2 (Level A).",
+    },
+    {
+        "source": "WCAG 2.2", "reference": "4.1.2 – aria-required-attr",
+        "text": "Axe-core regel aria-required-attr: Ett element med en ARIA-roll "
+                "saknar ett obligatoriskt ARIA-attribut. T.ex. kräver role='checkbox' "
+                "attributet aria-checked, role='combobox' kräver aria-expanded. "
+                "Lägg till det saknade attributet med ett lämpligt värde. "
+                "WCAG 4.1.2 (Level A).",
+    },
+    {
+        "source": "WCAG 2.2", "reference": "4.1.2 – aria-hidden-focus",
+        "text": "Axe-core regel aria-hidden-focus: Ett fokusbart element finns "
+                "inuti ett element med aria-hidden='true'. Skärmläsare döljer "
+                "elementet men tangentbordet kan fortfarande nå det, vilket skapar "
+                "förvirring. Antingen: ta bort aria-hidden, lägg till tabindex='-1' "
+                "på det fokuserbara elementet, eller flytta det fokuserbara "
+                "elementet utanför aria-hidden-området. WCAG 4.1.2 (Level A).",
+    },
+
+    # ── Listor ──────────────────────────────────────────────────────────────
+    {
+        "source": "WCAG 2.2", "reference": "1.3.1 – definition-list",
+        "text": "Axe-core regler definition-list och dlitem: "
+                "En <dl>-lista (definitionslista) har ogiltiga barn-element, "
+                "eller ett <dt>/<dd>-element används utanför en <dl>. "
+                "Strukturen ska vara: <dl><dt>Term</dt><dd>Definition</dd></dl>. "
+                "Enbart <dt> och <dd> (och <div> som wrapper) är tillåtna barn. "
+                "WCAG 1.3.1 (Level A).",
+    },
+
+    # ── Formulär: fler regler ───────────────────────────────────────────────
+    {
+        "source": "WCAG 2.2", "reference": "3.3.2 – form-field-multiple-labels",
+        "text": "Axe-core regel form-field-multiple-labels: Ett formulärfält "
+                "har flera <label>-element kopplade till sig. Detta kan ge "
+                "förvirrande information till skärmläsare. Säkerställ att varje "
+                "fält har exakt ett kopplat label-element. "
+                "WCAG 3.3.2 (Level A).",
+    },
+
+    # ── Språk ────────────────────────────────────────────────────────────────
+    {
+        "source": "WCAG 2.2", "reference": "3.1.2",
+        "text": "Success Criterion 3.1.2 Language of Parts (Level AA): Det "
+                "mänskliga språket för varje passage eller fras i innehållet kan "
+                "bestämmas programmatiskt, utom för egennamn, tekniska termer och "
+                "ord av obestämt språk. Markera textavsnitt på annat språk med "
+                "lang-attribut, t.ex. <span lang='en'>Hello</span>. "
+                "Axe-core: valid-lang.",
     },
 ]
 
