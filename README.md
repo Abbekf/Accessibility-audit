@@ -16,7 +16,7 @@ Användare  →  FastAPI  →  Playwright + axe-core (hittar fel)
 ```
 
 - **axe-core** hittar tekniska fel (fakta, inte AI)
-- **ChromaDB + OpenAI embeddings** = RAG-pipeline mot WCAG 2.2 och EAA
+- **ChromaDB + auto-vald embedding (OpenAI / Gemini / lokal)** = RAG-pipeline mot WCAG 2.2 och EAA
 - **Valfri LLM** (OpenAI, Claude eller Gemini) förklarar felen på svenska, baserat på hämtad lagtext
 - **HTML-rapport** med källhänvisningar, kontextskärmdumpar och utvecklarverktyg
 - **FastAPI** exponerar allt som ett enkelt webb-API
@@ -39,42 +39,44 @@ playwright install chromium
 
 ### 3. Sätt upp API-nycklar
 
-Kopiera `.env.example` till `.env` och fyll i de nycklar du vill använda:
+Kopiera `.env.example` till `.env` och fyll i minst **en** av dessa nycklar:
 
-- **OPENAI_API_KEY** från https://platform.openai.com/api-keys (krävs alltid för RAG-embeddings)
-- **ANTHROPIC_API_KEY** från https://console.anthropic.com (om du vill använda Claude)
-- **GEMINI_API_KEY** från https://aistudio.google.com (om du vill använda Gemini)
+- **OPENAI_API_KEY** från https://platform.openai.com/api-keys
+- **ANTHROPIC_API_KEY** från https://console.anthropic.com
+- **GEMINI_API_KEY** från https://aistudio.google.com
 
 ```bash
 cp .env.example .env
 # Öppna .env och fyll i dina nycklar
 ```
 
-> **OBS!** `OPENAI_API_KEY` krävs alltid för att bygga och söka i vektordatabasen (RAG-embeddings),
-> oavsett vilken LLM du väljer för förklaringarna.
+> **OBS!** Du behöver bara **en** nyckel för att komma igång. Systemet väljer
+> automatiskt embedding-provider i prioritetsordning: OpenAI → Gemini → lokal (ONNX, ingen nyckel krävs om du har `ANTHROPIC_API_KEY`).
+> Om du byter vilken nyckel du använder måste du köra om `python indexer.py`
+> så att vektordatabasen byggs om med rätt embedding-modell.
 
-### 4. Bygg upp kunskapsbasen (görs EN gång)
+### 4. Bygg upp kunskapsbasen (görs EN gång, eller om du byter nyckel)
 
-Detta laddar ner WCAG och EAA-texterna och bygger upp vektordatabasen.
-Det tar ett par minuter och kostar några öre i OpenAI-avgifter.
+Detta laddar ner WCAG- och EAA-texterna och bygger upp vektordatabasen.
 
 ```bash
 python indexer.py
 ```
 
 Du bör se output som:
+
 ```
 📥 Försöker ladda ner WCAG 2.2...
    OK: 127 chunks från WCAG
 📥 Försöker ladda ner EAA (Lag 2023:254)...
    OK: 45 chunks från EAA
-📚 Lägger till 11 seed-chunks
+📚 Lägger till 55 seed-chunks
 🧮 Skapar embeddings...
-✅ Klart! 183 chunks indexerade
+✅ Klart! 227 chunks indexerade
 ```
 
-Även om nedladdningarna krånglar fungerar det ändå tack vare fallback-seed,
-men då blir täckningen mindre.
+Även om nedladdningarna krånglar fungerar det ändå tack vare de 55 seed-chunksarna
+som täcker alla axe-core-regler, men då blir täckningen av hela lagtexten mindre.
 
 ### 5. Starta servern
 
@@ -190,10 +192,11 @@ Kopierar ett JavaScript-kommando som scrollar till elementet och ritar en röd r
 ## Filstruktur
 
 - `scanner.py` — Browsar sidan och kör axe-core, tar kontextskärmdumpar
-- `indexer.py` — Bygger upp vektordatabasen från WCAG + EAA (kör en gång)
-- `retriever.py` — Slår upp relevant lagtext i ChromaDB
+- `indexer.py` — Bygger upp vektordatabasen från WCAG + EAA (kör en gång, eller om du byter API-nyckel)
+- `retriever.py` — Slår upp relevant lagtext i ChromaDB (auto-väljer embedding-provider)
 - `explainer.py` — Skickar fel + lagtext till vald LLM (OpenAI / Claude / Gemini)
 - `reporter.py` — Genererar HTML-rapport med kategorisering och utvecklarverktyg
+- `crawler.py` — Crawlar en hel sajt och samlar in alla sidor för granskning
 - `main.py` — FastAPI-server som binder ihop allt
 - `ui.html` — Webbaserat gränssnitt med LLM-väljare
 - `templates/report.html` — Mallen för den interaktiva HTML-rapporten
@@ -201,6 +204,6 @@ Kopierar ett JavaScript-kommando som scrollar till elementet och ritar en röd r
 
 ## Vad är nästa steg?
 
-- [ ] Crawla flera sidor per sajt, inte bara startsidan
+- [x] Crawla flera sidor per sajt, inte bara startsidan
 - [ ] Databas för historik och trendanalys
 - [ ] Kontinuerlig övervakning (schemalagd scanning)
