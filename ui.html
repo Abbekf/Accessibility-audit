@@ -193,9 +193,11 @@
       display: none;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      gap: 18px;
+      justify-content: flex-start;
+      gap: 14px;
       color: #64748b;
+      padding: 32px 24px 24px;
+      overflow: hidden;
     }
     .spinner {
       width: 48px; height: 48px;
@@ -203,10 +205,101 @@
       border-top-color: #1a4db5;
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
+      flex-shrink: 0;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .loading-state h2 { font-size: 18px; color: #0d1b4b; }
-    .loading-state p  { font-size: 13px; }
+    .loading-state h2 { font-size: 18px; color: #0d1b4b; text-align: center; }
+    .loading-state p  { font-size: 13px; text-align: center; }
+
+    /* ── Live log panel ── */
+    .log-panel {
+      width: 100%;
+      max-width: 980px;
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      background: #0d1424;
+      border: 1px solid #1f2c4d;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 24px rgba(13,27,75,0.18);
+      margin-top: 4px;
+    }
+    .log-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      background: #111a36;
+      border-bottom: 1px solid #1f2c4d;
+      font-size: 11px;
+      color: #8aaae0;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    .log-header .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 10px rgba(34,197,94,0.7);
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%      { opacity: 0.35; }
+    }
+    .log-header .spacer { flex: 1; }
+    .log-header button {
+      background: rgba(255,255,255,0.06);
+      color: #c8d8f0;
+      border: 1px solid rgba(255,255,255,0.12);
+      padding: 3px 10px;
+      border-radius: 4px;
+      font-size: 10.5px;
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      font-family: inherit;
+      transition: background 0.15s;
+    }
+    .log-header button:hover { background: rgba(255,255,255,0.14); }
+    .log-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 14px 12px;
+      font-family: "SFMono-Regular", "Menlo", "Consolas", monospace;
+      font-size: 11.5px;
+      line-height: 1.55;
+      color: #c8d8f0;
+      scrollbar-width: thin;
+      scrollbar-color: #2a3a70 transparent;
+    }
+    .log-body::-webkit-scrollbar { width: 6px; }
+    .log-body::-webkit-scrollbar-thumb { background: #2a3a70; border-radius: 3px; }
+    .log-row {
+      display: flex;
+      gap: 8px;
+      padding: 1px 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .log-ts    { color: #5a6a8a; flex-shrink: 0; }
+    .log-level { font-weight: 700; flex-shrink: 0; min-width: 56px; }
+    .log-name  { color: #7eaaff; flex-shrink: 0; min-width: 80px; }
+    .log-msg   { color: #d8e3f5; flex: 1; }
+    .lv-DEBUG    { color: #6b7c9c; }
+    .lv-INFO     { color: #22c55e; }
+    .lv-WARNING  { color: #fbbf24; }
+    .lv-ERROR    { color: #ef4444; }
+    .lv-CRITICAL { color: #f472b6; }
+    .log-row.level-WARNING  { background: rgba(251,191,36,0.06); }
+    .log-row.level-ERROR    { background: rgba(239,68,68,0.10); }
+    .log-row.level-CRITICAL { background: rgba(244,114,182,0.10); }
+    .log-empty {
+      color: #5a6a8a;
+      font-style: italic;
+      padding: 10px 0;
+    }
   </style>
 </head>
 <body>
@@ -250,6 +343,20 @@
       <div class="spinner"></div>
       <h2 id="loading-url"></h2>
       <p id="loading-msg">Granskar sidan… det tar vanligtvis 20–60 sekunder.</p>
+
+      <div class="log-panel" id="log-panel" aria-live="polite">
+        <div class="log-header">
+          <span class="dot" id="log-dot"></span>
+          <span>Live-logg</span>
+          <span id="log-status">ansluter…</span>
+          <span class="spacer"></span>
+          <button type="button" id="log-pause-btn" title="Pausa autoscroll">⏸ Paus</button>
+          <button type="button" id="log-clear-btn" title="Töm loggen i UI:t">🧹 Töm</button>
+        </div>
+        <div class="log-body" id="log-body">
+          <div class="log-empty">Loggrader visas här i realtid när skanningen körs…</div>
+        </div>
+      </div>
     </div>
 
     <!-- Report -->
@@ -300,6 +407,10 @@
     const emptyState  = document.getElementById('empty-state');
     const actions     = document.getElementById('header-actions');
     const saveBtn     = document.getElementById('save-btn');
+    const presBtn     = document.getElementById('pres-btn');
+    const scanBtn     = document.getElementById('scan-btn');
+    const scanSiteBtn = document.getElementById('scan-site-btn');
+    const urlInput    = document.getElementById('url');
 
     let lastBlob    = null;
     let lastBlobUrl = null;
@@ -328,16 +439,111 @@
       emptyState.style.display   = 'flex';
     }
 
-    async function runScan(endpoint, label) {
-      let url = document.getElementById('url').value.trim();
-      if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+    function showError(msg) {
+      statusEl.className = 'status-bar error';
+      statusEl.style.display = 'block';
+      statusEl.textContent = 'Fel: ' + msg;
+    }
 
-      document.getElementById('scan-btn').disabled = true;
-      document.getElementById('scan-site-btn').disabled = true;
+    function normaliseUrl(raw) {
+      const trimmed = (raw || '').trim();
+      if (!trimmed) return '';
+      return /^https?:\/\//i.test(trimmed) ? trimmed : 'https://' + trimmed;
+    }
+
+    // ── Live-logg via SSE ────────────────────────────────────────────────────
+    const logBody    = document.getElementById('log-body');
+    const logStatus  = document.getElementById('log-status');
+    const logDot     = document.getElementById('log-dot');
+    const pauseBtn   = document.getElementById('log-pause-btn');
+    const clearBtn   = document.getElementById('log-clear-btn');
+    let   logSource  = null;
+    let   logPaused  = false;
+    let   logHadAny  = false;
+
+    function clearLog() {
+      logBody.innerHTML = '<div class="log-empty">Loggrader visas här i realtid när skanningen körs…</div>';
+      logHadAny = false;
+    }
+
+    function appendLog(entry) {
+      if (!logHadAny) {
+        logBody.innerHTML = '';
+        logHadAny = true;
+      }
+      const row = document.createElement('div');
+      row.className = 'log-row level-' + entry.level;
+      const ts = (entry.ts || '').split('T')[1]?.slice(0, 12) || '';
+      row.innerHTML =
+        '<span class="log-ts"></span>' +
+        '<span class="log-level lv-' + entry.level + '"></span>' +
+        '<span class="log-name"></span>' +
+        '<span class="log-msg"></span>';
+      row.children[0].textContent = ts;
+      row.children[1].textContent = entry.level;
+      row.children[2].textContent = entry.logger || '';
+      row.children[3].textContent = entry.message || '';
+      logBody.appendChild(row);
+
+      // Begränsa antal rader för att undvika minnesläckor
+      while (logBody.children.length > 600) logBody.removeChild(logBody.firstChild);
+
+      if (!logPaused) {
+        logBody.scrollTop = logBody.scrollHeight;
+      }
+    }
+
+    function connectLogStream() {
+      if (logSource) return;
+      try {
+        logSource = new EventSource('/logs/stream');
+        logStatus.textContent = 'ansluter…';
+        logDot.style.background = '#fbbf24';
+
+        logSource.onopen = () => {
+          logStatus.textContent = 'live';
+          logDot.style.background = '#22c55e';
+        };
+        logSource.onmessage = (ev) => {
+          if (!ev.data || ev.data.startsWith(':')) return;
+          try { appendLog(JSON.parse(ev.data)); } catch (e) { /* ignore */ }
+        };
+        logSource.onerror = () => {
+          logStatus.textContent = 'frånkopplad — försöker igen…';
+          logDot.style.background = '#ef4444';
+        };
+      } catch (e) {
+        logStatus.textContent = 'kunde inte starta';
+        logDot.style.background = '#ef4444';
+      }
+    }
+
+    pauseBtn.onclick = () => {
+      logPaused = !logPaused;
+      pauseBtn.textContent = logPaused ? '▶ Forts.' : '⏸ Paus';
+      pauseBtn.title = logPaused ? 'Återuppta autoscroll' : 'Pausa autoscroll';
+      if (!logPaused) logBody.scrollTop = logBody.scrollHeight;
+    };
+    clearBtn.onclick = clearLog;
+
+    // Anslut till loggen direkt när sidan laddas så vi ser allt som händer.
+    connectLogStream();
+
+    async function runScan(endpoint, label) {
+      const url = normaliseUrl(urlInput.value);
+      if (!url || url === 'https://') {
+        showError('Ange en URL först (t.ex. www.exempel.se)');
+        urlInput.focus();
+        return;
+      }
+
+      scanBtn.disabled = true;
+      scanSiteBtn.disabled = true;
       statusEl.style.display = 'block';
       statusEl.className = 'status-bar';
       statusEl.textContent = '';
       actions.style.display = 'none';
+      clearLog();
       showLoading(label || url, endpoint === '/scan-site');
 
       try {
@@ -358,34 +564,64 @@
         actions.style.display = 'flex';
         statusEl.textContent = 'Färdig!';
       } catch (err) {
-        statusEl.className = 'status-bar error';
-        statusEl.textContent = 'Fel: ' + err.message;
+        showError(err.message || String(err));
         showEmpty();
       } finally {
-        document.getElementById('scan-btn').disabled = false;
-        document.getElementById('scan-site-btn').disabled = false;
+        scanBtn.disabled = false;
+        scanSiteBtn.disabled = false;
       }
     }
 
-    form.onsubmit = (e) => {
+    form.addEventListener('submit', (e) => {
       e.preventDefault();
       runScan('/scan');
-    };
+    });
 
-    document.getElementById('scan-site-btn').onclick = () => {
-      const url = document.getElementById('url').value.trim();
+    scanSiteBtn.addEventListener('click', () => {
+      const url = normaliseUrl(urlInput.value);
+      if (!url || url === 'https://') {
+        showError('Ange en URL först (t.ex. www.exempel.se)');
+        urlInput.focus();
+        return;
+      }
       runScan('/scan-site', `Skannar alla sidor på ${url}…`);
-    };
+    });
 
-    saveBtn.onclick = () => {
-      const iframe = document.getElementById('report-frame');
-      if (!iframe || !iframe.contentWindow) return;
-      iframe.contentWindow.postMessage('printReport', '*');
-    };
+    saveBtn.addEventListener('click', () => {
+      // postMessage till iframen som lyssnar och kör window.print()
+      if (frame.style.display === 'none' || !frame.contentWindow) {
+        showError('Ingen rapport att skriva ut ännu — kör en granskning först.');
+        return;
+      }
+      try {
+        frame.contentWindow.postMessage('printReport', '*');
+      } catch (err) {
+        // Fallback: öppna i nytt fönster och låt användaren trycka Ctrl/Cmd+P
+        if (lastBlobUrl) window.open(lastBlobUrl, '_blank');
+        else showError('Kunde inte skicka utskriftsbegäran: ' + err.message);
+      }
+    });
 
-    const presBtn = document.getElementById('pres-btn');
-    presBtn.onclick = async () => {
-      if (!lastUrl) return;
+    presBtn.addEventListener('click', async () => {
+      if (!lastUrl) {
+        showError('Kör en granskning först innan du skapar en presentation.');
+        return;
+      }
+      // Öppna fliken SYNKRONT (innan await) för att undvika popup-blockerare.
+      const popup = window.open('about:blank', '_blank');
+      if (popup) {
+        try {
+          popup.document.write(
+            '<title>Genererar presentation…</title>' +
+            '<body style="background:#0d1b4b;color:#fff;font-family:sans-serif;display:flex;' +
+            'align-items:center;justify-content:center;height:100vh;margin:0">' +
+            '<div style="text-align:center"><div style="font-size:32px">⏳</div>' +
+            '<div style="margin-top:12px">Genererar presentation…</div></div></body>'
+          );
+          popup.document.close();
+        } catch (e) { /* about:blank kan vara skrivskyddad i vissa browsers */ }
+      }
+
       presBtn.disabled = true;
       presBtn.textContent = '⏳ Genererar…';
       try {
@@ -397,16 +633,25 @@
         if (!res.ok) throw new Error(await res.text());
         const blob = await res.blob();
         const blobUrl = URL.createObjectURL(blob);
-        window.open(blobUrl, '_blank');
+        if (popup && !popup.closed) {
+          popup.location.href = blobUrl;
+        } else {
+          // Popup-blockerare: erbjud nedladdningslänk istället
+          const a = document.createElement('a');
+          a.href = blobUrl;
+          a.target = '_blank';
+          a.rel = 'noopener';
+          a.download = 'presentation.html';
+          a.click();
+        }
       } catch (err) {
-        statusEl.className = 'status-bar error';
-        statusEl.style.display = 'block';
-        statusEl.textContent = 'Fel: ' + err.message;
+        if (popup) try { popup.close(); } catch (_) {}
+        showError(err.message || String(err));
       } finally {
         presBtn.disabled = false;
         presBtn.textContent = '📊 Skapa presentation';
       }
-    };
+    });
 
     window.addEventListener('message', (e) => {
       if (e.data && e.data.type === 'a11y-diag') {

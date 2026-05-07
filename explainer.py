@@ -16,6 +16,7 @@ Detta är garantin mot hallucinationer.
 """
 
 import os
+import time
 from pathlib import Path
 from openai import AsyncOpenAI
 from pydantic import BaseModel
@@ -24,6 +25,9 @@ from dotenv import load_dotenv
 
 from scanner import A11yIssue
 from retriever import retrieve_relevant_laws, RetrievedChunk
+from logger import get_logger
+
+log = get_logger("explainer")
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent
@@ -79,10 +83,8 @@ def _resolve_provider_and_model(provider: str, model: str) -> tuple[str, str]:
     for candidate in ("claude", "gemini", "openai"):
         if candidate in available:
             if requested in ("openai", "claude", "gemini") and requested != candidate:
-                print(
-                    f"[explainer] Varning: provider '{requested}' saknar nyckel. "
-                    f"Byter till '{candidate}'."
-                )
+                log.warning("Provider '%s' saknar nyckel — byter till '%s'.",
+                            requested, candidate)
             return candidate, DEFAULT_MODEL_BY_PROVIDER[candidate]
 
     # Teoretiskt onåbar eftersom vi redan hanterat tom lista.
@@ -150,7 +152,10 @@ async def explain_issue(issue: A11yIssue, provider: str = "openai", model: str =
     Förklarar ett fel med hjälp av RAG-pipelinen.
     För bildregler med skärmdump används vision för konkret analys.
     """
+    t0 = time.time()
+    log.debug("[AI] RAG-sökning för regel %s…", issue.rule_id)
     retrieved = retrieve_relevant_laws(issue, top_k=3)
+    log.debug("[AI] RAG hittade %d relevanta utdrag för %s", len(retrieved), issue.rule_id)
 
     if retrieved:
         context_block = "\n\n".join([
@@ -180,14 +185,24 @@ RELEVANTA UTDRAG FRÅN WCAG / EAA:
 Förklara problemet och föreslå en fix. Baserat ENDAST på utdragen ovan."""
 
     resolved_provider, resolved_model = _resolve_provider_and_model(provider, model)
+    log.info("[AI] Anropar %s/%s för %s%s",
+             resolved_provider, resolved_model, issue.rule_id,
+             " (vision)" if use_vision else "")
 
-    if resolved_provider == "claude":
-        response_text = await _call_claude(resolved_model, user_prompt, screenshot_b64=issue.screenshot_b64 if use_vision else "")
-    elif resolved_provider == "gemini":
-        response_text = await _call_gemini(resolved_model, user_prompt, screenshot_b64=issue.screenshot_b64 if use_vision else "")
-    else:
-        response_text = await _call_openai(resolved_model, user_prompt, screenshot_b64=issue.screenshot_b64 if use_vision else "")
+    try:
+        if resolved_provider == "claude":
+            response_text = await _call_claude(resolved_model, user_prompt, screenshot_b64=issue.screenshot_b64 if use_vision else "")
+        elif resolved_provider == "gemini":
+            response_text = await _call_gemini(resolved_model, user_prompt, screenshot_b64=issue.screenshot_b64 if use_vision else "")
+        else:
+            response_text = await _call_openai(resolved_model, user_prompt, screenshot_b64=issue.screenshot_b64 if use_vision else "")
+    except Exception as exc:
+        log.error("[AI] %s/%s misslyckades för %s: %s",
+                  resolved_provider, resolved_model, issue.rule_id, exc)
+        raise
 
+    log.debug("[AI] %s/%s svarade på %.1fs (%d tecken)",
+              resolved_provider, resolved_model, time.time() - t0, len(response_text or ""))
     explanation, fix, citations, confidence = _parse_response(response_text)
 
     adjusted_impact = None

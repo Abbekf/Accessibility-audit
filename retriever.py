@@ -19,6 +19,9 @@ from dotenv import load_dotenv
 from pydantic import BaseModel
 
 from scanner import A11yIssue
+from logger import get_logger
+
+log = get_logger("retriever")
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent
@@ -97,11 +100,13 @@ def _get_collection():
     if _collection is None or _active_provider != provider:
         _active_provider = provider
         _chroma_client = chromadb.PersistentClient(path=CHROMA_PATH)
+        log.info("[RAG] Initierar ChromaDB-collection (%s) för provider '%s'",
+                 collection_name, provider)
 
-        # Försök hämta provider-specifik collection, fall tillbaka på legacy-namn
         for name in (collection_name, "a11y_laws"):
             try:
                 _collection = _chroma_client.get_collection(name)
+                log.info("[RAG] Använder collection '%s'", name)
                 return _collection
             except Exception:
                 continue
@@ -122,7 +127,7 @@ def retrieve_relevant_laws(issue: A11yIssue, top_k: int = 3) -> List[RetrievedCh
         collection = _get_collection()
     except RuntimeError as exc:
         if not _retrieval_warning_printed:
-            print(f"[retriever] Varning: {exc}")
+            log.warning("RAG inaktiverad: %s", exc)
             _retrieval_warning_printed = True
         return []
 
@@ -134,7 +139,7 @@ def retrieve_relevant_laws(issue: A11yIssue, top_k: int = 3) -> List[RetrievedCh
         )
     except Exception as exc:
         if not _retrieval_warning_printed:
-            print(f"[retriever] Kunde inte skapa embedding ({provider}): {exc}")
+            log.warning("Kunde inte skapa embedding (%s): %s", provider, exc)
             _retrieval_warning_printed = True
         return []
 

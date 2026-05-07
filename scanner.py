@@ -17,10 +17,15 @@ LLM:en får bara se den här datan, den hittar aldrig på egna fel.
 import asyncio
 import base64
 import sys
+import time
 from concurrent.futures import ThreadPoolExecutor
 from playwright.async_api import async_playwright
 from pydantic import BaseModel
 from typing import List
+
+from logger import get_logger
+
+log = get_logger("scanner")
 
 # Trådpool för att köra Playwright i en egen tråd med ProactorEventLoop
 # (uvicorn på Windows använder SelectorEventLoop som inte stöder subprocesser)
@@ -64,7 +69,7 @@ async def scan_url(url: str) -> tuple[List[A11yIssue], str]:
         return await _scan_url_async(url)
 
 
-def _scan_url_sync(url: str) -> List[A11yIssue]:
+def _scan_url_sync(url: str) -> tuple[List[A11yIssue], str]:
     """Kör Playwright i en ny ProactorEventLoop (för Windows-trådar)."""
     loop = asyncio.ProactorEventLoop()
     asyncio.set_event_loop(loop)
@@ -74,30 +79,51 @@ def _scan_url_sync(url: str) -> List[A11yIssue]:
         loop.close()
 
 
-async def _scan_url_async(url: str) -> List[A11yIssue]:
+async def _scan_url_async(url: str) -> tuple[List[A11yIssue], str]:
     """
     Öppnar en webbläsare, besöker URL:en och kör axe-core.
     Returnerar en lista med hittade problem.
     """
     issues: List[A11yIssue] = []
+    t0 = time.time()
+    log.info("[SCAN] Startar skanning av %s", url)
 
     # async_playwright är kontexthanteraren som startar browsern
     async with async_playwright() as p:
         # Starta Chromium i "headless"-läge (utan synligt fönster)
+        log.debug("[SCAN] Startar Chromium (headless)…")
         browser = await p.chromium.launch(headless=True)
         page = await browser.new_page()
+        log.debug("[SCAN] Browser öppen, navigerar till sidan")
 
         # Gå till sidan och vänta tills allt laddat klart
         # (inklusive JavaScript – viktigt för moderna sajter)
-        await page.goto(url, wait_until="networkidle", timeout=30000)
+        try:
+            t_nav = time.time()
+            await page.goto(url, wait_until="networkidle", timeout=30000)
+            log.info("[SCAN] Sidan laddad (%.1fs): %s", time.time() - t_nav, url)
+        except Exception as exc:
+            log.warning("[SCAN] networkidle timeout, försöker domcontentloaded: %s", exc)
+            try:
+                await page.goto(url, wait_until="domcontentloaded", timeout=20000)
+                log.info("[SCAN] Sidan laddad (domcontentloaded): %s", url)
+            except Exception as exc2:
+                log.error("[SCAN] Kunde inte navigera till %s: %s", url, exc2)
+                await browser.close()
+                raise
 
         # Injicera axe-core i sidan. Nu finns "axe"-objektet tillgängligt
         # i sidans JavaScript-kontext.
+        log.debug("[SCAN] Injicerar axe-core från %s", AXE_CDN_URL)
         await page.add_script_tag(url=AXE_CDN_URL)
 
         # Kör axe.run() i webbläsaren. Resultatet skickas tillbaka som JSON.
         # Vi kan köra JavaScript direkt i sidan med page.evaluate().
+        log.debug("[SCAN] Kör axe.run() i webbläsaren…")
+        t_axe = time.time()
         results = await page.evaluate("async () => await axe.run()")
+        violation_count = len(results.get("violations", []))
+        log.info("[SCAN] axe-core klar (%.1fs) — %d överträdelse-regler", time.time() - t_axe, violation_count)
 
         # Försök stänga cookie-bannern innan skärmdumpar tas så den inte täcker elementen
         _COOKIE_SELECTORS = [
@@ -111,6 +137,7 @@ async def _scan_url_async(url: str) -> List[A11yIssue]:
             try:
                 _btn = page.locator(_sel).first
                 if await _btn.is_visible(timeout=400):
+                    log.debug("[SCAN] Stänger cookie-banner: %s", _sel)
                     await _btn.click()
                     await page.wait_for_timeout(600)
                     break
@@ -125,6 +152,7 @@ async def _scan_url_async(url: str) -> List[A11yIssue]:
         }
 
         # Vi översätter dem till vårt egna format
+        screenshots_taken = 0
         for violation in results.get("violations", []):
             wcag_tags = [t for t in violation.get("tags", []) if t.startswith("wcag")]
             wcag_ref = _format_wcag(wcag_tags[0]) if wcag_tags else "Okänd"
@@ -132,6 +160,8 @@ async def _scan_url_async(url: str) -> List[A11yIssue]:
             rule_id = violation.get("id", "")
             nodes = violation.get("nodes", [])
             is_image_rule = rule_id in IMAGE_RULES
+            log.debug("[SCAN] Bearbetar regel %s — %d element (%s)",
+                      rule_id, len(nodes), violation.get("impact", "?"))
 
             if is_image_rule:
                 # För bildregel: ta en beskuren skärmdump (full sidupplösning, klippt till elementet)
@@ -173,7 +203,9 @@ async def _scan_url_async(url: str) -> List[A11yIssue]:
                                 }
                                 img_bytes = await page.screenshot(clip=clip, type="jpeg", quality=75, timeout=4000)
                                 shot = base64.b64encode(img_bytes).decode()
-                        except Exception:
+                                screenshots_taken += 1
+                        except Exception as exc:
+                            log.debug("[SCAN] Kunde inte ta bildskärmdump för %s: %s", targets[0] if targets else "?", exc)
                             shot = ""
                     node_screenshots.append(shot)
             else:
@@ -217,6 +249,7 @@ async def _scan_url_async(url: str) -> List[A11yIssue]:
                             shot_kwargs["clip"] = clip_ctx
                         img_bytes = await page.screenshot(**shot_kwargs)
                         screenshot_b64 = base64.b64encode(img_bytes).decode()
+                        screenshots_taken += 1
                         await page.evaluate(
                             """sel => {
                                 const el = document.querySelector(sel);
@@ -228,7 +261,8 @@ async def _scan_url_async(url: str) -> List[A11yIssue]:
                             }""",
                             selector,
                         )
-                    except Exception:
+                    except Exception as exc:
+                        log.debug("[SCAN] Kontextskärmdump misslyckades för %s: %s", selector, exc)
                         screenshot_b64 = ""
 
             for i, node in enumerate(nodes):
@@ -246,9 +280,16 @@ async def _scan_url_async(url: str) -> List[A11yIssue]:
                     source_url=url,
                 ))
 
+        log.info("[SCAN] %d skärmdumpar tagna", screenshots_taken)
+        log.debug("[SCAN] Hämtar site-logo…")
         site_logo_b64 = await _fetch_site_logo(page)
+        if site_logo_b64:
+            log.debug("[SCAN] Logo hittad (%d byte base64)", len(site_logo_b64))
+        else:
+            log.debug("[SCAN] Ingen logo hittad")
         await browser.close()
 
+    log.info("[SCAN] ✓ Klar med %s — %d problem på %.1fs", url, len(issues), time.time() - t0)
     return issues, site_logo_b64
 
 
@@ -276,7 +317,8 @@ async def _fetch_site_logo(page) -> str:
                 r = await client.get(url)
             if r.status_code == 200 and r.headers.get("content-type", "").startswith("image"):
                 return base64.b64encode(r.content).decode()
-        except Exception:
+        except Exception as exc:
+            log.debug("[SCAN] Logo-kandidat misslyckades (%s): %s", url, exc)
             continue
     return ""
 

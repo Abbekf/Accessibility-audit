@@ -13,6 +13,10 @@ Thumbs.db
 # PDF-rapporter och tillfälliga filer
 *.pdf
 
+# Loggar
+logs/
+*.log
+
 chroma_db/
 chroma_db/**
 chroma_db/*.db
@@ -20,3 +24,6 @@ chroma_db/*.sqlite3
 
 __pycache__/
 *.pyc
+
+
+.claude

@@ -7,11 +7,16 @@ Använder Playwright så att JavaScript-renderade sidor fungerar korrekt.
 
 import asyncio
 import sys
+import time
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import urljoin, urlparse, urldefrag
 
 from playwright.async_api import async_playwright
+
+from logger import get_logger
+
+log = get_logger("crawler")
 
 _executor = ThreadPoolExecutor(max_workers=1)
 
@@ -46,11 +51,18 @@ async def _crawl_async(start_url: str, max_pages: int, max_depth: int) -> list[s
     base_origin = f"{parsed.scheme}://{parsed.netloc}"
 
     visited: set[str] = set()
-    # queue items: (url, depth)
     queue: deque[tuple[str, int]] = deque([(start_url, 0)])
     found: list[str] = []
+    skipped_external = 0
+    skipped_filetype = 0
+    failed = 0
+    t0 = time.time()
+
+    log.info("[CRAWL] Startar crawl av %s (max %d sidor, djup %d)",
+             start_url, max_pages, max_depth)
 
     async with async_playwright() as p:
+        log.debug("[CRAWL] Startar Chromium…")
         browser = await p.chromium.launch(headless=True)
         page = await browser.new_page()
 
@@ -64,31 +76,49 @@ async def _crawl_async(start_url: str, max_pages: int, max_depth: int) -> list[s
             try:
                 await page.goto(url, wait_until="domcontentloaded", timeout=20000)
                 found.append(url)
-            except Exception:
+                log.info("[CRAWL] [%d/%d] djup=%d ← %s",
+                         len(found), max_pages, depth, url)
+            except Exception as exc:
+                failed += 1
+                log.warning("[CRAWL] Hoppar över %s: %s", url, exc)
                 continue
 
             if depth >= max_depth:
                 continue
 
             # Hämta alla <a href> på sidan
-            hrefs: list[str] = await page.evaluate("""
-                () => Array.from(document.querySelectorAll('a[href]'))
-                         .map(a => a.href)
-            """)
+            try:
+                hrefs: list[str] = await page.evaluate("""
+                    () => Array.from(document.querySelectorAll('a[href]'))
+                             .map(a => a.href)
+                """)
+            except Exception as exc:
+                log.warning("[CRAWL] Kunde inte läsa länkar från %s: %s", url, exc)
+                continue
 
+            queued_here = 0
             for href in hrefs:
-                href, _ = urldefrag(href)        # ta bort #-ankare
+                href, _ = urldefrag(href)
                 href = _normalise(href)
                 if not href.startswith(base_origin):
-                    continue                      # externt – hoppa över
+                    skipped_external += 1
+                    continue
                 if href in visited:
                     continue
                 if _should_skip(href):
+                    skipped_filetype += 1
                     continue
                 queue.append((href, depth + 1))
+                queued_here += 1
+
+            if queued_here:
+                log.debug("[CRAWL]   ↳ %d nya länkar i kö (totalt i kön: %d)",
+                          queued_here, len(queue))
 
         await browser.close()
 
+    log.info("[CRAWL] ✓ Klar — %d sidor på %.1fs (besökta: %d, externa: %d, filer: %d, misslyckade: %d)",
+             len(found), time.time() - t0, len(visited), skipped_external, skipped_filetype, failed)
     return found
 
 
