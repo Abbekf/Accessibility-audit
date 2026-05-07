@@ -1,16 +1,13 @@
 """
 retriever.py
 
-Detta är "sökmotorn" i vår RAG-pipeline.
+RAG-sökmotorn. Väljer embedding-provider automatiskt:
+  1. OPENAI_API_KEY   → OpenAI text-embedding-3-small
+  2. GEMINI_API_KEY   → Google text-embedding-004
+  3. ANTHROPIC_API_KEY → lokal ChromaDB-modell (ONNX MiniLM-L6-v2)
 
-Vad den gör:
-1. Tar emot ett tillgänglighetsfel
-2. Konverterar felet till en embedding (sifferlista)
-3. Söker i ChromaDB efter de chunks som ligger närmast
-4. Returnerar de mest relevanta textpassagerna
-
-Resultatet används sedan av explainer.py för att bygga en prompt
-med korrekt lagtext som kontext.
+Separata collections per provider så att vektorrymden alltid stämmer.
+Kör 'python indexer.py' efter att du ändrat vilken nyckel du använder.
 """
 
 import os
@@ -19,114 +16,130 @@ from typing import List
 
 import chromadb
 from dotenv import load_dotenv
-from openai import OpenAI
 from pydantic import BaseModel
 
 from scanner import A11yIssue
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent
-ENV_PATHS = [
-    PROJECT_ROOT / ".env",
-    PROJECT_ROOT / "a11y-audit-rag" / "a11y-audit" / ".env",
-]
-for env_path in ENV_PATHS:
+for env_path in [PROJECT_ROOT / ".env",
+                 PROJECT_ROOT / "a11y-audit-rag" / "a11y-audit" / ".env"]:
     if env_path.exists():
         load_dotenv(dotenv_path=env_path, override=False)
 
-_openai_client = None
+_openai_key    = os.getenv("OPENAI_API_KEY", "")
+_gemini_key    = os.getenv("GEMINI_API_KEY", "")
+_anthropic_key = os.getenv("ANTHROPIC_API_KEY", "")
 
 CHROMA_PATH = str(Path(__file__).parent / "chroma_db")
-COLLECTION_NAME = "a11y_laws"
-EMBEDDING_MODEL = "text-embedding-3-small"
 
 
 class RetrievedChunk(BaseModel):
-    """En hämtad textbit från kunskapsbasen."""
-    source: str        # T.ex. "WCAG 2.2" eller "EAA / LPTT"
-    reference: str     # T.ex. "1.1.1" eller "Lag 2023:254 §9"
-    text: str          # Själva texten
-    distance: float    # Hur nära (0 = identiskt, större = mindre relevant)
+    source: str
+    reference: str
+    text: str
+    distance: float
 
 
-# Vi återanvänder samma client mellan anrop, det är snabbare
-_client = None
+def get_embedding_provider() -> tuple[str, str]:
+    """
+    Returnerar (provider, collection_name).
+    Prioritet: OpenAI → Gemini → Claude (lokal modell).
+    """
+    if _openai_key:
+        return "openai", "a11y_laws_openai"
+    if _gemini_key:
+        return "gemini", "a11y_laws_gemini"
+    if _anthropic_key:
+        return "local", "a11y_laws_local"
+    raise RuntimeError(
+        "Ingen API-nyckel hittades. Lägg till minst en av\n"
+        "OPENAI_API_KEY, GEMINI_API_KEY eller ANTHROPIC_API_KEY i .env\n"
+        "och kör sedan 'python indexer.py'."
+    )
+
+
+def make_embedding(text: str, provider: str) -> List[float]:
+    """Genererar en embedding med vald provider."""
+    if provider == "openai":
+        from openai import OpenAI
+        return OpenAI(api_key=_openai_key).embeddings.create(
+            model="text-embedding-3-small", input=text,
+        ).data[0].embedding
+
+    if provider == "gemini":
+        import google.generativeai as genai
+        genai.configure(api_key=_gemini_key)
+        return genai.embed_content(
+            model="models/text-embedding-004",
+            content=text,
+            task_type="retrieval_query",
+        )["embedding"]
+
+    if provider == "local":
+        from chromadb.utils.embedding_functions import DefaultEmbeddingFunction
+        return DefaultEmbeddingFunction()([text])[0]
+
+    raise RuntimeError(f"Okänd embedding-provider: {provider}")
+
+
+_chroma_client = None
 _collection = None
+_active_provider: str | None = None
 _retrieval_warning_printed = False
 
 
-def _get_openai_client() -> OpenAI:
-    """Skapar OpenAI-klienten vid behov i stället för vid import."""
-    global _openai_client
-    if _openai_client is None:
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            raise RuntimeError(
-                "OPENAI_API_KEY saknas i .env. "
-                "Satt variabeln i projektets .env och starta om servern."
-            )
-        _openai_client = OpenAI(api_key=api_key)
-    return _openai_client
-
-
 def _get_collection():
-    """Öppnar databasen första gången, återanvänder den sedan."""
-    global _client, _collection
-    if _collection is None:
-        _client = chromadb.PersistentClient(path=CHROMA_PATH)
-        try:
-            _collection = _client.get_collection(COLLECTION_NAME)
-        except Exception:
-            raise RuntimeError(
-                "Hittar ingen indexerad kunskapsbas. "
-                "Kör 'python indexer.py' först för att bygga upp den."
-            )
+    global _chroma_client, _collection, _active_provider
+
+    provider, collection_name = get_embedding_provider()
+
+    if _collection is None or _active_provider != provider:
+        _active_provider = provider
+        _chroma_client = chromadb.PersistentClient(path=CHROMA_PATH)
+
+        # Försök hämta provider-specifik collection, fall tillbaka på legacy-namn
+        for name in (collection_name, "a11y_laws"):
+            try:
+                _collection = _chroma_client.get_collection(name)
+                return _collection
+            except Exception:
+                continue
+
+        raise RuntimeError(
+            f"Hittar ingen indexerad kunskapsbas för '{provider}'.\n"
+            "Kör 'python indexer.py' för att bygga upp den."
+        )
+
     return _collection
 
 
-def _make_query(issue: A11yIssue) -> str:
-    """
-    Bygger en sökfråga från felet. Vi kombinerar flera fält för
-    att få en rikare semantisk signal. Bara rule_id räcker inte.
-    """
-    return (
-        f"{issue.wcag_reference} {issue.rule_id} "
-        f"{issue.description} {issue.help_text}"
-    )
-
-
 def retrieve_relevant_laws(issue: A11yIssue, top_k: int = 3) -> List[RetrievedChunk]:
-    """
-    Hittar de top_k mest relevanta textpassagerna för ett givet fel.
-    Default är 3, vilket brukar vara en bra balans mellan täckning
-    och promptstorlek.
-    """
     global _retrieval_warning_printed
 
     try:
+        provider, _ = get_embedding_provider()
         collection = _get_collection()
-        openai_client = _get_openai_client()
     except RuntimeError as exc:
-        # Fallback: låt appen fortsätta utan RAG i stället för att returnera 500.
         if not _retrieval_warning_printed:
-            print(f"[retriever] Varning: {exc} Fortsätter utan RAG-källor.")
+            print(f"[retriever] Varning: {exc}")
             _retrieval_warning_printed = True
         return []
 
-    # Bygg sökfrågan och konvertera till embedding
-    query_text = _make_query(issue)
-    query_embedding = openai_client.embeddings.create(
-        model=EMBEDDING_MODEL,
-        input=query_text,
-    ).data[0].embedding
+    try:
+        query_embedding = make_embedding(
+            f"{issue.wcag_reference} {issue.rule_id} "
+            f"{issue.description} {issue.help_text}",
+            provider,
+        )
+    except Exception as exc:
+        if not _retrieval_warning_printed:
+            print(f"[retriever] Kunde inte skapa embedding ({provider}): {exc}")
+            _retrieval_warning_printed = True
+        return []
 
-    # Sök i databasen. Chroma returnerar de närmaste enligt cosinus-likhet
-    results = collection.query(
-        query_embeddings=[query_embedding],
-        n_results=top_k,
-    )
+    results = collection.query(query_embeddings=[query_embedding], n_results=top_k)
 
-    # Packa ihop resultaten till en snygg lista av RetrievedChunk
     chunks = []
     if results["documents"] and results["documents"][0]:
         for doc, meta, dist in zip(
@@ -140,5 +153,4 @@ def retrieve_relevant_laws(issue: A11yIssue, top_k: int = 3) -> List[RetrievedCh
                 text=doc,
                 distance=dist,
             ))
-
     return chunks

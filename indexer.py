@@ -1,25 +1,15 @@
 """
 indexer.py
 
-Denna modul bygger upp vektordatabasen med WCAG 2.2 och EAA-texter.
-Den körs EN GÅNG när du sätter upp verktyget.
+Bygger upp vektordatabasen med WCAG 2.2 och EAA-texter.
+Körs EN GÅNG (eller om du byter embedding-provider).
 
-Kör den med:
     python indexer.py
 
-Vad den gör:
-1. Laddar ner WCAG 2.2-dokumentet från W3C
-2. Laddar ner EAA-lagtexten (svenska: Lag 2023:254)
-3. Delar upp texterna i små "chunks" på cirka 800 tecken
-4. Skickar varje chunk till OpenAI för att få en embedding (en sifferlista)
-5. Sparar allt i ChromaDB (en lokal vektor-databas)
-
-Efter det kan retriever.py söka i databasen blixtsnabbt.
-
-VIKTIGT OM FALLBACK:
-Om nätet krånglar eller du vill testa snabbt finns en inbyggd seed
-med exempel-chunks. Då kan du köra systemet ändå, men med begränsad
-täckning. Du kommer se en varning i så fall.
+Embedding-provider väljs automatiskt:
+  OPENAI_API_KEY    → OpenAI text-embedding-3-small   (collection: a11y_laws_openai)
+  GEMINI_API_KEY    → Google text-embedding-004        (collection: a11y_laws_gemini)
+  ANTHROPIC_API_KEY → lokal ChromaDB-modell (ONNX)    (collection: a11y_laws_local)
 """
 
 import os
@@ -30,34 +20,60 @@ import chromadb
 import httpx
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
-from openai import OpenAI
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent
-ENV_PATHS = [
-    PROJECT_ROOT / ".env",
-    PROJECT_ROOT / "a11y-audit-rag" / "a11y-audit" / ".env",
-]
-for env_path in ENV_PATHS:
+for env_path in [PROJECT_ROOT / ".env",
+                 PROJECT_ROOT / "a11y-audit-rag" / "a11y-audit" / ".env"]:
     if env_path.exists():
         load_dotenv(dotenv_path=env_path, override=False)
 
-_openai_key = os.getenv("OPENAI_API_KEY")
-if not _openai_key or _openai_key == "din-openai-nyckel-här":
+_openai_key    = os.getenv("OPENAI_API_KEY", "")
+_gemini_key    = os.getenv("GEMINI_API_KEY", "")
+_anthropic_key = os.getenv("ANTHROPIC_API_KEY", "")
+
+CHROMA_PATH = str(Path(__file__).parent / "chroma_db")
+
+
+def get_embedding_provider() -> tuple[str, str]:
+    """
+    Returnerar (provider, collection_name).
+    Prioritet: OpenAI → Gemini → Claude (lokal modell).
+    """
+    if _openai_key:
+        return "openai", "a11y_laws_openai"
+    if _gemini_key:
+        return "gemini", "a11y_laws_gemini"
+    if _anthropic_key:
+        return "local", "a11y_laws_local"
     raise RuntimeError(
-        "OPENAI_API_KEY saknas i .env. "
-        "Skaffa nyckel på https://platform.openai.com/api-keys"
+        "Ingen API-nyckel hittades. Lägg till minst en av\n"
+        "OPENAI_API_KEY, GEMINI_API_KEY eller ANTHROPIC_API_KEY i .env."
     )
 
-openai_client = OpenAI(api_key=_openai_key)
 
-# Vi sparar ChromaDB-filer i en mapp bredvid koden.
-# Persistent_client = datan överlever när programmet stängs av.
-CHROMA_PATH = str(Path(__file__).parent / "chroma_db")
-COLLECTION_NAME = "a11y_laws"
+def make_embedding(text: str, provider: str) -> list:
+    """Genererar en embedding med vald provider."""
+    if provider == "openai":
+        from openai import OpenAI
+        return OpenAI(api_key=_openai_key).embeddings.create(
+            model="text-embedding-3-small", input=text,
+        ).data[0].embedding
 
-# OpenAI:s billigaste embedding-modell. Räcker gott för vårt ändamål.
-EMBEDDING_MODEL = "text-embedding-3-small"
+    if provider == "gemini":
+        import google.generativeai as genai
+        genai.configure(api_key=_gemini_key)
+        return genai.embed_content(
+            model="models/text-embedding-004",
+            content=text,
+            task_type="retrieval_document",
+        )["embedding"]
+
+    if provider == "local":
+        from chromadb.utils.embedding_functions import DefaultEmbeddingFunction
+        return DefaultEmbeddingFunction()([text])[0]
+
+    raise RuntimeError(f"Okänd provider: {provider}")
 
 # Hur stora bitar ska vi dela upp texten i?
 # För stort = svårare att hitta exakt rätt del
@@ -233,32 +249,23 @@ def chunk_text(text: str, source: str) -> List[dict]:
 # Steg 3: Bygg upp databasen
 # ---------------------------------------------------------------------------
 
-def get_embedding(text: str) -> List[float]:
-    """Ber OpenAI konvertera en text till en embedding (sifferlista)."""
-    response = openai_client.embeddings.create(
-        model=EMBEDDING_MODEL,
-        input=text,
-    )
-    return response.data[0].embedding
-
-
 def build_index():
     """Huvudfunktionen: hämtar, chunkar, embeddar och sparar."""
-    print("🔧 Bygger upp tillgänglighetskunskapsbas...")
+    provider, collection_name = get_embedding_provider()
+    print(f"🔧 Bygger upp tillgänglighetskunskapsbas (embedding-provider: {provider})...")
 
-    # Skapa databasen (eller öppna befintlig)
     client = chromadb.PersistentClient(path=CHROMA_PATH)
 
     # Ta bort gammal collection om den finns, så vi börjar från noll
     try:
-        client.delete_collection(COLLECTION_NAME)
+        client.delete_collection(collection_name)
         print("  Gammal databas rensad.")
     except Exception:
         pass
 
     collection = client.create_collection(
-        name=COLLECTION_NAME,
-        metadata={"description": "WCAG 2.2 och EAA / LPTT"},
+        name=collection_name,
+        metadata={"description": "WCAG 2.2 och EAA / LPTT", "provider": provider},
     )
 
     # Hämta dokumenten
@@ -291,7 +298,7 @@ def build_index():
 
     # Skicka till OpenAI för embeddings, en i taget
     # (för enkelhets skull - i produktion skulle vi batcha)
-    print(f"🧮 Skapar embeddings för {len(all_chunks)} chunks...")
+    print(f"🧮 Skapar embeddings för {len(all_chunks)} chunks ({provider})...")
     ids = []
     documents = []
     metadatas = []
@@ -299,7 +306,7 @@ def build_index():
 
     for idx, chunk in enumerate(all_chunks):
         print(f"   [{idx + 1}/{len(all_chunks)}] {chunk['reference']}")
-        embedding = get_embedding(chunk["text"])
+        embedding = make_embedding(chunk["text"], provider)
         ids.append(f"chunk-{idx}")
         documents.append(chunk["text"])
         metadatas.append({
@@ -316,7 +323,7 @@ def build_index():
         embeddings=embeddings,
     )
 
-    print(f"✅ Klart! {len(all_chunks)} chunks indexerade i {CHROMA_PATH}")
+    print(f"✅ Klart! {len(all_chunks)} chunks indexerade i {CHROMA_PATH} ({collection_name})")
     print(f"   Du kan nu köra: uvicorn main:app --reload")
 
 
