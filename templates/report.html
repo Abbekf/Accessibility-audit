@@ -1296,7 +1296,7 @@ mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
         {% for issue in cat.issues %}
         <div class="issue-card" data-impact="{{ issue.impact }}"
              data-rule="{{ issue.rule_id }}"
-             data-search="{{ (issue.plain_swedish ~ ' ' ~ issue.rule_id ~ ' ' ~ (issue.wcag_reference or '') ~ ' ' ~ issue.selectors|map(attribute='label')|join(' ')) | lower | striptags }}">
+             data-search="{{ (issue.plain_swedish ~ ' ' ~ issue.rule_id ~ ' ' ~ (issue.wcag_reference or '') ~ ' ' ~ issue.selectors|map(attribute='label')|join(' ')) | lower | striptags | replace('"', '') | replace("'", '') }}">
 
           <div class="card-summary" onclick="toggleCard(this.parentElement)">
             <div class="card-meta-row">
