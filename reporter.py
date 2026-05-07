@@ -317,39 +317,72 @@ _IMPACT_ORDER = {"critical": 0, "serious": 1, "moderate": 2, "minor": 3}
 
 
 def _group_issues(items: List[ExplainedIssue]) -> list:
-    """Grupperar problem per rule_id och sorterar dem i DIGG-kategorier."""
+    """
+    Grupperar problem per rule_id — utom bildregler som får ett eget kort per element
+    så att AI:ns dekorativ/innehållsbärande-bedömning kan ge individuell allvarlighetsgrad.
+    """
     from collections import OrderedDict
     groups: OrderedDict = OrderedDict()
+    image_counters: dict = {}  # rule_id → antal för unik nyckel
+
     for item in items:
-        key = item.issue.rule_id
-        is_image_rule = key in _IMAGE_RULES_SET
-        if key not in groups:
+        rule_id = item.issue.rule_id
+        is_image_rule = rule_id in _IMAGE_RULES_SET
+
+        if is_image_rule:
+            image_counters[rule_id] = image_counters.get(rule_id, 0) + 1
+            key = f"{rule_id}__{image_counters[rule_id]}"
+            effective_impact = item.adjusted_impact or item.issue.impact
+            label = _describe_element(item.issue.selector, item.issue.affected_html, rule_id, image_counters[rule_id])
             groups[key] = {
-                "rule_id": item.issue.rule_id,
+                "rule_id": rule_id,
                 "wcag_reference": item.issue.wcag_reference,
-                "impact": item.issue.impact,
+                "impact": effective_impact,
                 "plain_swedish": _md_to_html(item.plain_swedish),
                 "suggested_fix": _md_to_html(item.suggested_fix),
                 "confidence": item.confidence,
                 "citations": item.citations,
                 "help_url": item.issue.help_url,
                 "screenshot_b64": item.issue.screenshot_b64,
-                "selectors": [],
-                "count": 0,
-                "digg_category": _digg_category(item.issue.rule_id, item.issue.wcag_reference or ""),
-                "is_image_rule": is_image_rule,
+                "selectors": [{
+                    "label": label,
+                    "html": str(html_escape(_truncate_html(item.issue.affected_html))),
+                    "selector": item.issue.selector,
+                    "source_url": item.issue.source_url or "",
+                    "vision_fix": _md_to_html(item.suggested_fix),
+                }],
+                "count": 1,
+                "digg_category": _digg_category(rule_id, item.issue.wcag_reference or ""),
+                "is_image_rule": True,
             }
-        groups[key]["count"] += 1
-        if len(groups[key]["selectors"]) < _MAX_ELEMENTS_SHOWN:
-            el_index = groups[key]["count"]  # count incrementeras precis innan
-            groups[key]["selectors"].append({
-                "label": _describe_element(item.issue.selector, item.issue.affected_html, item.issue.rule_id, el_index),
-                "html": str(html_escape(_truncate_html(item.issue.affected_html))),
-                "selector": item.issue.selector,
-                "source_url": item.issue.source_url or "",
-                # För bildregler: individuell AI-bedömning per element
-                "vision_fix": _md_to_html(item.suggested_fix) if is_image_rule else "",
-            })
+        else:
+            key = rule_id
+            if key not in groups:
+                groups[key] = {
+                    "rule_id": rule_id,
+                    "wcag_reference": item.issue.wcag_reference,
+                    "impact": item.issue.impact,
+                    "plain_swedish": _md_to_html(item.plain_swedish),
+                    "suggested_fix": _md_to_html(item.suggested_fix),
+                    "confidence": item.confidence,
+                    "citations": item.citations,
+                    "help_url": item.issue.help_url,
+                    "screenshot_b64": item.issue.screenshot_b64,
+                    "selectors": [],
+                    "count": 0,
+                    "digg_category": _digg_category(rule_id, item.issue.wcag_reference or ""),
+                    "is_image_rule": False,
+                }
+            groups[key]["count"] += 1
+            if len(groups[key]["selectors"]) < _MAX_ELEMENTS_SHOWN:
+                el_index = groups[key]["count"]
+                groups[key]["selectors"].append({
+                    "label": _describe_element(item.issue.selector, item.issue.affected_html, rule_id, el_index),
+                    "html": str(html_escape(_truncate_html(item.issue.affected_html))),
+                    "selector": item.issue.selector,
+                    "source_url": item.issue.source_url or "",
+                    "vision_fix": "",
+                })
     return list(groups.values())
 
 
@@ -372,13 +405,13 @@ def _group_by_digg(groups: list) -> list:
 
 def generate_presentation_html(url: str, items: List[ExplainedIssue]) -> str:
     """Genererar en slide-presentation i HTML-format."""
-    count_by_impact = {
-        "critical": sum(1 for i in items if i.issue.impact == "critical"),
-        "serious":  sum(1 for i in items if i.issue.impact == "serious"),
-        "moderate": sum(1 for i in items if i.issue.impact == "moderate"),
-        "minor":    sum(1 for i in items if i.issue.impact == "minor"),
-    }
     grouped = _group_issues(items)
+    count_by_impact = {
+        "critical": sum(1 for g in grouped if g["impact"] == "critical"),
+        "serious":  sum(1 for g in grouped if g["impact"] == "serious"),
+        "moderate": sum(1 for g in grouped if g["impact"] == "moderate"),
+        "minor":    sum(1 for g in grouped if g["impact"] == "minor"),
+    }
     digg_groups = _group_by_digg(grouped)
 
     from urllib.parse import urlparse
@@ -390,7 +423,7 @@ def generate_presentation_html(url: str, items: List[ExplainedIssue]) -> str:
         site_name=site_name,
         scan_date=datetime.now().strftime("%Y-%m-%d %H:%M"),
         digg_groups=digg_groups,
-        total_issues=len(items),
+        total_issues=len(grouped),
         unique_rules=len(grouped),
         num_categories=len(digg_groups),
         count_by_impact=count_by_impact,
@@ -401,14 +434,13 @@ def generate_html(url: str, items: List[ExplainedIssue], site_logo_b64: str = ""
     """
     Genererar en interaktiv HTML-rapport och returnerar den som sträng.
     """
-    count_by_impact = {
-        "critical": sum(1 for i in items if i.issue.impact == "critical"),
-        "serious":  sum(1 for i in items if i.issue.impact == "serious"),
-        "moderate": sum(1 for i in items if i.issue.impact == "moderate"),
-        "minor":    sum(1 for i in items if i.issue.impact == "minor"),
-    }
-
     grouped = _group_issues(items)
+    count_by_impact = {
+        "critical": sum(1 for g in grouped if g["impact"] == "critical"),
+        "serious":  sum(1 for g in grouped if g["impact"] == "serious"),
+        "moderate": sum(1 for g in grouped if g["impact"] == "moderate"),
+        "minor":    sum(1 for g in grouped if g["impact"] == "minor"),
+    }
     digg_groups = _group_by_digg(grouped)
 
     from urllib.parse import urlparse
@@ -421,6 +453,6 @@ def generate_html(url: str, items: List[ExplainedIssue], site_logo_b64: str = ""
         site_logo_b64=site_logo_b64,
         scan_date=datetime.now().strftime("%Y-%m-%d %H:%M"),
         digg_groups=digg_groups,
-        total_issues=len(items),
+        total_issues=len(grouped),
         count_by_impact=count_by_impact,
     )

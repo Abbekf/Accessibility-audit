@@ -103,6 +103,7 @@ class ExplainedIssue(BaseModel):
     confidence: str          # "high", "medium", "low"
     citations: List[Citation]  # Vilka källor som användes
     retrieved_chunks: List[RetrievedChunk]  # För transparens i rapporten
+    adjusted_impact: str | None = None  # Satt om AI bedömer att axe-cores impact är missvisande
 
 
 # Bildregler där vision-analys ger konkret nytta
@@ -130,6 +131,11 @@ säg det tydligt istället för att gissa.
 5. Förslag ska vara KONKRETA med kodexempel där det är relevant.
 6. Om du ser en skärmdump av en bild: avgör om bilden är DEKORATIV eller INNEHÅLLSBÄRANDE \
 och ge ett specifikt förslag. Markera tydligt om det är din bedömning.
+   VIKTIGT: Följande bilder är ALLTID INNEHÅLLSBÄRANDE, oavsett utseende:
+   - Bilder inuti en länk (<a>-element med href) — förmedlar länkens destination
+   - Bilder inuti en knapp (<button> eller role="button") — förmedlar knappens funktion
+   - Bilder med role="img" eller aria-label — explicit markerade som meningsfulla
+   Klassificera ALDRIG dessa som dekorativa.
 
 Svara ALLTID i exakt detta format, inget annat:
 
@@ -184,6 +190,18 @@ Förklara problemet och föreslå en fix. Baserat ENDAST på utdragen ovan."""
 
     explanation, fix, citations, confidence = _parse_response(response_text)
 
+    adjusted_impact = None
+    if use_vision and issue.impact in ("critical", "serious"):
+        html_lower = (issue.affected_html or "").lower()
+        # Bilder inuti interaktiva element är alltid innehållsbärande
+        is_interactive = any(marker in html_lower for marker in (
+            "<a ", "<a>", "href=", "<button", "role=\"button\"", "onclick=",
+            "role=\"img\"", "aria-label=",
+        ))
+        lower = explanation.lower() + fix.lower()
+        if not is_interactive and "dekorativ" in lower and "innehållsbärande" not in lower:
+            adjusted_impact = "minor"
+
     return ExplainedIssue(
         issue=issue,
         plain_swedish=explanation,
@@ -191,6 +209,7 @@ Förklara problemet och föreslå en fix. Baserat ENDAST på utdragen ovan."""
         confidence=confidence,
         citations=citations,
         retrieved_chunks=retrieved,
+        adjusted_impact=adjusted_impact,
     )
 
 
