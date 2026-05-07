@@ -451,14 +451,14 @@ body {
 .card-body {
   display: none;
   border-top: 1px solid var(--border);
-  grid-template-columns: 1fr 1fr;
 }
-.issue-card.open .card-body { display: grid; }
+.issue-card.open .card-body { display: block; }
 
 .card-panel { padding: 18px 20px; }
-.card-panel + .card-panel { border-left: 1px solid var(--border); }
-.card-body.single-col { grid-template-columns: 1fr; }
-.card-body.single-col .card-panel + .card-panel { border-left: none; border-top: 1px solid var(--border); }
+.card-panel + .card-panel { border-top: 1px solid var(--border); }
+.card-body.single-col { }
+.card-panel-screenshot { padding: 12px 20px; background: #f8fafc; }
+.card-panel-screenshot .screenshot { max-height: 320px; object-fit: cover; object-position: top; }
 .panel-label {
   font-size: 10px;
   font-weight: 700;
@@ -974,8 +974,8 @@ mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
   .issue-card { display: block !important; page-break-inside: avoid; margin-bottom: 10px; box-shadow: none; }
 
   /* Öppna alla kort */
-  .card-body { display: grid !important; grid-template-columns: 1fr 1fr; border-top: 1px solid #ddd; }
-  .card-body.single-col { grid-template-columns: 1fr !important; }
+  .card-body { display: block !important; border-top: 1px solid #ddd; }
+  .card-panel-screenshot .screenshot { max-height: 220px; }
 
   /* Dölj element-extra */
   .el-extra { display: list-item !important; }
@@ -1332,8 +1332,18 @@ mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
             <button class="status-btn" onclick="setStatus(this, 'wontfix')" title="Markera som ej relevant">🚫 Ej relevant</button>
           </div>
 
-          <div class="card-body{% if not (issue.screenshot_b64 and issue.count <= 5) %} single-col{% endif %}">
-            <!-- Left: fix -->
+          <div class="card-body">
+            {% if issue.screenshot_b64 and issue.count <= 5 %}
+            <!-- Screenshot: full width at top -->
+            <div class="card-panel card-panel-screenshot">
+              <img class="screenshot"
+                   src="data:image/png;base64,{{ issue.screenshot_b64 }}"
+                   alt="Skärmdump av första träffade elementet">
+              <div class="screenshot-label">Skärmdump: första träffen</div>
+            </div>
+            {% endif %}
+
+            <!-- Explanation -->
             <div class="card-panel">
               <div class="panel-label">Vad det innebär</div>
               <div class="fix-body" style="margin-bottom:14px; color: var(--muted);">{{ issue.plain_swedish | striptags | truncate(400) }}</div>
@@ -1357,16 +1367,9 @@ mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
               </div>
             </div>
 
-            <!-- Right: elements -->
+            <!-- Elements -->
             <div class="card-panel">
               <div class="panel-label">Berörda element ({{ issue.count }} st)</div>
-
-              {% if issue.screenshot_b64 and issue.count <= 5 %}
-              <img class="screenshot"
-                   src="data:image/png;base64,{{ issue.screenshot_b64 }}"
-                   alt="Skärmdump av första träffade elementet">
-              <div class="screenshot-label">Skärmdump: första träffen</div>
-              {% endif %}
 
               <ul class="el-list">
                 {% for sel in issue.selectors %}
