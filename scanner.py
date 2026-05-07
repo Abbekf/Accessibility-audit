@@ -99,54 +99,123 @@ async def _scan_url_async(url: str) -> List[A11yIssue]:
         # Vi kan köra JavaScript direkt i sidan med page.evaluate().
         results = await page.evaluate("async () => await axe.run()")
 
+        # Försök stänga cookie-bannern innan skärmdumpar tas så den inte täcker elementen
+        _COOKIE_SELECTORS = [
+            "#CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll",
+            "#onetrust-accept-btn-handler",
+            "button[id*='accept-all']",
+            "button[class*='accept-all']",
+            "button[class*='acceptAll']",
+        ]
+        for _sel in _COOKIE_SELECTORS:
+            try:
+                _btn = page.locator(_sel).first
+                if await _btn.is_visible(timeout=400):
+                    await _btn.click()
+                    await page.wait_for_timeout(600)
+                    break
+            except Exception:
+                pass
+
         # axe returnerar en lista "violations" (fel den är säker på)
+        # Regler där varje element får sin egen skärmdump (beskuren till elementet)
+        IMAGE_RULES = {
+            "image-alt", "input-image-alt", "role-img-alt",
+            "svg-img-alt", "image-redundant-alt",
+        }
+
         # Vi översätter dem till vårt egna format
         for violation in results.get("violations", []):
             wcag_tags = [t for t in violation.get("tags", []) if t.startswith("wcag")]
             wcag_ref = _format_wcag(wcag_tags[0]) if wcag_tags else "Okänd"
 
-            # Ta en kontextskärmdump: scrolla till elementet, markera det med
-            # en röd ram och fotografera hela viewporten så man ser var på sidan det sitter.
-            screenshot_b64 = ""
+            rule_id = violation.get("id", "")
             nodes = violation.get("nodes", [])
-            first_target = nodes[0].get("target", []) if nodes else []
-            if first_target:
-                try:
-                    selector = first_target[0]
-                    locator = page.locator(selector).first
-                    await locator.scroll_into_view_if_needed(timeout=2000)
-                    # Lägg på en synlig markering
-                    await page.evaluate(
-                        """sel => {
-                            const el = document.querySelector(sel);
-                            if (el) {
-                                el.dataset._a11yOld = el.style.outline;
-                                el.style.outline = '3px solid #e53e3e';
-                                el.style.outlineOffset = '2px';
-                            }
-                        }""",
-                        selector,
-                    )
-                    img_bytes = await page.screenshot(timeout=4000)
-                    screenshot_b64 = base64.b64encode(img_bytes).decode()
-                    # Ta bort markeringen igen
-                    await page.evaluate(
-                        """sel => {
-                            const el = document.querySelector(sel);
-                            if (el) {
-                                el.style.outline = el.dataset._a11yOld || '';
-                                el.style.outlineOffset = '';
-                                delete el.dataset._a11yOld;
-                            }
-                        }""",
-                        selector,
-                    )
-                except Exception:
-                    screenshot_b64 = ""
+            is_image_rule = rule_id in IMAGE_RULES
 
-            for node in nodes:
+            if is_image_rule:
+                # För bildregel: ta en beskuren skärmdump (full sidupplösning, klippt till elementet)
+                node_screenshots: list[str] = []
+                for node in nodes:
+                    targets = node.get("target", [])
+                    shot = ""
+                    if targets:
+                        try:
+                            locator = page.locator(targets[0]).first
+                            await locator.scroll_into_view_if_needed(timeout=2000)
+                            # Vänta tills den riktiga bilden laddats:
+                            # currentSrc får inte vara data: (blur-placeholder) OCH naturalWidth > 0
+                            try:
+                                await page.wait_for_function(
+                                    "(sel) => { const el = document.querySelector(sel); "
+                                    "if (!el || !el.complete) return false; "
+                                    "if (el.currentSrc && el.currentSrc.startsWith('data:')) return false; "
+                                    "return el.naturalWidth > 0; }",
+                                    targets[0],
+                                    timeout=4000,
+                                )
+                            except Exception:
+                                pass
+                            bbox = await locator.bounding_box()
+                            if bbox:
+                                pad = 16
+                                min_w, min_h = 300, 200
+                                vp = page.viewport_size or {"width": 1280, "height": 800}
+                                w = max(bbox["width"]  + pad * 2, min_w)
+                                h = max(bbox["height"] + pad * 2, min_h)
+                                cx = bbox["x"] + bbox["width"]  / 2
+                                cy = bbox["y"] + bbox["height"] / 2
+                                clip = {
+                                    "x": max(0, cx - w / 2),
+                                    "y": max(0, cy - h / 2),
+                                    "width":  min(w, vp["width"]),
+                                    "height": min(h, vp["height"]),
+                                }
+                                img_bytes = await page.screenshot(clip=clip, timeout=4000)
+                                shot = base64.b64encode(img_bytes).decode()
+                        except Exception:
+                            shot = ""
+                    node_screenshots.append(shot)
+            else:
+                # För övriga regler: en kontextskärmdump (hela viewporten) för första elementet
+                screenshot_b64 = ""
+                first_target = nodes[0].get("target", []) if nodes else []
+                if first_target:
+                    try:
+                        selector = first_target[0]
+                        locator = page.locator(selector).first
+                        await locator.scroll_into_view_if_needed(timeout=2000)
+                        await page.evaluate(
+                            """sel => {
+                                const el = document.querySelector(sel);
+                                if (el) {
+                                    el.dataset._a11yOld = el.style.outline;
+                                    el.style.outline = '3px solid #e53e3e';
+                                    el.style.outlineOffset = '2px';
+                                }
+                            }""",
+                            selector,
+                        )
+                        img_bytes = await page.screenshot(timeout=4000)
+                        screenshot_b64 = base64.b64encode(img_bytes).decode()
+                        await page.evaluate(
+                            """sel => {
+                                const el = document.querySelector(sel);
+                                if (el) {
+                                    el.style.outline = el.dataset._a11yOld || '';
+                                    el.style.outlineOffset = '';
+                                    delete el.dataset._a11yOld;
+                                }
+                            }""",
+                            selector,
+                        )
+                    except Exception:
+                        screenshot_b64 = ""
+
+            for i, node in enumerate(nodes):
+                shot = node_screenshots[i] if is_image_rule else screenshot_b64
                 issues.append(A11yIssue(
-                    rule_id=violation.get("id", ""),
+                    rule_id=rule_id,
                     wcag_reference=wcag_ref,
                     impact=violation.get("impact") or "unknown",
                     description=violation.get("description", ""),
@@ -154,7 +223,7 @@ async def _scan_url_async(url: str) -> List[A11yIssue]:
                     help_url=violation.get("helpUrl", ""),
                     affected_html=node.get("html", ""),
                     selector=", ".join(node.get("target", [])),
-                    screenshot_b64=screenshot_b64,
+                    screenshot_b64=shot,
                     source_url=url,
                 ))
 
