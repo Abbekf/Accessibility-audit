@@ -457,6 +457,8 @@ body {
 
 .card-panel { padding: 18px 20px; }
 .card-panel + .card-panel { border-left: 1px solid var(--border); }
+.card-body.single-col { grid-template-columns: 1fr; }
+.card-body.single-col .card-panel + .card-panel { border-left: none; border-top: 1px solid var(--border); }
 .panel-label {
   font-size: 10px;
   font-weight: 700;
@@ -973,6 +975,7 @@ mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
 
   /* Öppna alla kort */
   .card-body { display: grid !important; grid-template-columns: 1fr 1fr; border-top: 1px solid #ddd; }
+  .card-body.single-col { grid-template-columns: 1fr !important; }
 
   /* Dölj element-extra */
   .el-extra { display: list-item !important; }
@@ -1182,7 +1185,7 @@ mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
         <button class="fbtn fs"  onclick="setFilter('serious',  this)">Allvarliga</button>
         <button class="fbtn fm"  onclick="setFilter('moderate', this)">Måttliga</button>
         <button class="fbtn fi"  onclick="setFilter('minor',    this)">Mindre</button>
-        <button class="fbtn" id="btn-resolved" onclick="toggleResolved(this)" title="Visa/dölj hanterade problem" style="margin-left:4px">Visa hanterade</button>
+        <button class="fbtn on" id="btn-resolved" onclick="toggleResolved(this)" title="Visa/dölj hanterade problem" style="margin-left:4px">Dölj hanterade</button>
         <button class="fbtn print-btn" onclick="printReport()" title="Skapa PDF-rapport" style="margin-left:8px;background:#1a4db5;color:#fff;border-color:#1a4db5">📄 Skapa rapport</button>
       </div>
     </div>
@@ -1311,7 +1314,7 @@ mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
                 <span class="chevron">▼</span>
               </span>
             </div>
-            <div class="card-title-row">{{ issue.plain_swedish | striptags }}</div>
+            <div class="card-title-row">{{ issue.plain_swedish | striptags | truncate(220) }}</div>
             {% if issue.selectors %}
             <div class="card-preview">
               {% for sel in issue.selectors[:2] %}
@@ -1329,7 +1332,7 @@ mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
             <button class="status-btn" onclick="setStatus(this, 'wontfix')" title="Markera som ej relevant">🚫 Ej relevant</button>
           </div>
 
-          <div class="card-body">
+          <div class="card-body{% if not (issue.screenshot_b64 and issue.count <= 5) %} single-col{% endif %}">
             <!-- Left: fix -->
             <div class="card-panel">
               <div class="panel-label">Vad det innebär</div>
@@ -1447,7 +1450,7 @@ mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
 let currentFilter = 'all';
 let currentCatIdx = 0;
 let currentSearch = '';
-let showResolved = false;
+let showResolved = true;
 
 // ── localStorage keys ──
 const _URL_KEY     = '{{ url | replace("https://","") | replace("http://","") }}';
@@ -1775,17 +1778,27 @@ function expandAll(idx) {
 function collapseAll(idx) {
   const view = document.getElementById('cat-' + idx);
   if (!view) return;
-  view.querySelectorAll('.issue-card').forEach(c => c.classList.remove('open'));
+  view.querySelectorAll('.issue-card').forEach(c => {
+    if (c.style.display !== 'none') c.classList.remove('open');
+  });
 }
 
 function expandAllVisible() {
-  document.querySelectorAll('.issue-card').forEach(c => {
-    if (c.style.display !== 'none') c.classList.add('open');
+  document.querySelectorAll('.cat-view').forEach(view => {
+    if (view.style.display === 'none') return;
+    view.querySelectorAll('.issue-card').forEach(c => {
+      if (c.style.display !== 'none') c.classList.add('open');
+    });
   });
 }
 
 function collapseAllVisible() {
-  document.querySelectorAll('.issue-card').forEach(c => c.classList.remove('open'));
+  document.querySelectorAll('.cat-view').forEach(view => {
+    if (view.style.display === 'none') return;
+    view.querySelectorAll('.issue-card').forEach(c => {
+      if (c.style.display !== 'none') c.classList.remove('open');
+    });
+  });
 }
 
 function dashFilter(impact, card) {
@@ -1796,9 +1809,9 @@ function dashFilter(impact, card) {
 
   currentFilter = targetImpact;
   updateNavBadges(targetImpact);
-  document.querySelectorAll('.fbtn').forEach(b => b.classList.remove('on'));
+  document.querySelectorAll('.filter-row .fbtn').forEach(b => b.classList.remove('on'));
   const map = { all: 0, critical: 1, serious: 2, moderate: 3, minor: 4 };
-  const fbtn = document.querySelectorAll('.fbtn')[map[targetImpact]];
+  const fbtn = document.querySelectorAll('.filter-row .fbtn')[map[targetImpact]];
   if (fbtn) fbtn.classList.add('on');
 
   if (targetImpact === 'all') {
@@ -1843,7 +1856,7 @@ function dashFilter(impact, card) {
 
 function setFilter(impact, btn) {
   // Synka fbtn-knappar
-  document.querySelectorAll('.fbtn').forEach(b => b.classList.remove('on'));
+  document.querySelectorAll('.filter-row .fbtn').forEach(b => b.classList.remove('on'));
   btn.classList.add('on');
 
   // Synka dashboard-kort

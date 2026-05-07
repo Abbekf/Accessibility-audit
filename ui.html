@@ -249,7 +249,7 @@
     <div class="loading-state" id="loading-state">
       <div class="spinner"></div>
       <h2 id="loading-url"></h2>
-      <p>Granskar sidan… det tar vanligtvis 20–60 sekunder.</p>
+      <p id="loading-msg">Granskar sidan… det tar vanligtvis 20–60 sekunder.</p>
     </div>
 
     <!-- Report -->
@@ -308,11 +308,14 @@
     const loadingState = document.getElementById('loading-state');
     const loadingUrl   = document.getElementById('loading-url');
 
-    function showLoading(url) {
+    function showLoading(url, isSite) {
       emptyState.style.display   = 'none';
       loadingState.style.display = 'flex';
       frame.style.display        = 'none';
       loadingUrl.textContent     = url;
+      document.getElementById('loading-msg').textContent = isSite
+        ? 'Crawlar och granskar alla sidor… detta kan ta flera minuter beroende på sajtens storlek.'
+        : 'Granskar sidan… det tar vanligtvis 20–60 sekunder.';
     }
     function showReport() {
       loadingState.style.display = 'none';
@@ -335,7 +338,7 @@
       statusEl.className = 'status-bar';
       statusEl.textContent = '';
       actions.style.display = 'none';
-      showLoading(label || url);
+      showLoading(label || url, endpoint === '/scan-site');
 
       try {
         const res = await fetch(endpoint, {
