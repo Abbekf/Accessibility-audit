@@ -1,9 +1,4 @@
-"""
-crawler.py
 
-Hittar alla interna sidor på en webbplats genom att följa länkar från rot-URL:en.
-Använder Playwright så att JavaScript-renderade sidor fungerar korrekt.
-"""
 
 import asyncio
 import sys
@@ -63,6 +58,12 @@ async def _crawl_async(start_url: str, max_pages: int, max_depth: int) -> list[s
 
             try:
                 await page.goto(url, wait_until="domcontentloaded", timeout=20000)
+                # Uppdatera base_origin efter första sidan ifall sajten omdirigerar
+                # (t.ex. www.foretag.se → foretag.se), annars filtreras alla interna
+                # länkar bort som "externa" och crawlen stannar efter 1 sida.
+                if not found:
+                    actual = urlparse(page.url)
+                    base_origin = f"{actual.scheme}://{actual.netloc}"
                 found.append(url)
             except Exception:
                 continue

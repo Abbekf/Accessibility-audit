@@ -1,19 +1,3 @@
-"""
-explainer.py
-
-Språkmotorn, nu RAG-förstärkt.
-
-Ny arkitektur:
-1. Ta in ett fel från axe-core (fakta)
-2. Slå upp relevant WCAG/EAA-text i vektordatabasen (retriever)
-3. Skicka BÅDE felet OCH lagtexten till Claude
-4. Claude får instruktioner att ENDAST använda den tillhandahållna texten
-5. Returnera förklaring, förslag, och källhänvisningar
-
-Skillnaden mot tidigare: Claude hittar aldrig på WCAG-regler från minnet.
-Allt den säger om regler är baserat på den text vi hämtat från databasen.
-Detta är garantin mot hallucinationer.
-"""
 
 import os
 from pathlib import Path
@@ -27,13 +11,7 @@ from retriever import retrieve_relevant_laws, RetrievedChunk
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent
-ENV_PATHS = [
-    PROJECT_ROOT / ".env",
-    PROJECT_ROOT / "a11y-audit-rag" / "a11y-audit" / ".env",
-]
-for env_path in ENV_PATHS:
-    if env_path.exists():
-        load_dotenv(dotenv_path=env_path, override=False)
+load_dotenv(dotenv_path=PROJECT_ROOT / ".env", override=False)
 
 _openai_key  = os.getenv("OPENAI_API_KEY", "")
 _claude_key  = os.getenv("ANTHROPIC_API_KEY", "")

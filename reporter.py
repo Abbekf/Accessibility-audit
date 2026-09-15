@@ -1,17 +1,5 @@
-"""
-reporter.py
 
-Sätter ihop allt till en läsbar PDF-rapport.
 
-Vad den gör:
-1. Tar en lista med förklarade fel (från explainer.py)
-2. Renderar en HTML-mall med Jinja2
-3. Konverterar HTML:en till PDF med WeasyPrint
-4. Returnerar PDF:en som bytes (som sen kan skickas till användaren)
-"""
-
-import os
-import sys
 from datetime import datetime
 from pathlib import Path
 from typing import List

@@ -1,23 +1,3 @@
-"""
-main.py
-
-Huvudapplikationen. Startar ett webb-API där man kan skicka in en URL
-och få tillbaka en PDF-rapport.
-
-Starta med:
-    uvicorn main:app --reload
-
-Sen kan du testa i din webbläsare:
-    http://localhost:8000/docs    (interaktiv API-dokumentation)
-    http://localhost:8000/scan?url=https://www.delorean.se
-
-Flödet:
-1. POST /scan med en URL i kroppen
-2. scanner.py öppnar sidan och hittar fel med axe-core
-3. explainer.py ber Claude förklara varje fel på svenska
-4. reporter.py genererar en PDF
-5. PDF:en returneras till användaren
-"""
 
 import asyncio
 

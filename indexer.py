@@ -1,16 +1,4 @@
-"""
-indexer.py
 
-Bygger upp vektordatabasen med WCAG 2.2 och EAA-texter.
-Körs EN GÅNG (eller om du byter embedding-provider).
-
-    python indexer.py
-
-Embedding-provider väljs automatiskt:
-  OPENAI_API_KEY    → OpenAI text-embedding-3-small   (collection: a11y_laws_openai)
-  GEMINI_API_KEY    → Google text-embedding-004        (collection: a11y_laws_gemini)
-  ANTHROPIC_API_KEY → lokal ChromaDB-modell (ONNX)    (collection: a11y_laws_local)
-"""
 
 import os
 from pathlib import Path
@@ -23,10 +11,7 @@ from dotenv import load_dotenv
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent
-for env_path in [PROJECT_ROOT / ".env",
-                 PROJECT_ROOT / "a11y-audit-rag" / "a11y-audit" / ".env"]:
-    if env_path.exists():
-        load_dotenv(dotenv_path=env_path, override=False)
+load_dotenv(dotenv_path=PROJECT_ROOT / ".env", override=False)
 
 _openai_key    = os.getenv("OPENAI_API_KEY", "")
 _gemini_key    = os.getenv("GEMINI_API_KEY", "")

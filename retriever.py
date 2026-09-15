@@ -1,14 +1,4 @@
-"""
-retriever.py
 
-RAG-sökmotorn. Väljer embedding-provider automatiskt:
-  1. OPENAI_API_KEY   → OpenAI text-embedding-3-small
-  2. GEMINI_API_KEY   → Google text-embedding-004
-  3. ANTHROPIC_API_KEY → lokal ChromaDB-modell (ONNX MiniLM-L6-v2)
-
-Separata collections per provider så att vektorrymden alltid stämmer.
-Kör 'python indexer.py' efter att du ändrat vilken nyckel du använder.
-"""
 
 import os
 from pathlib import Path
@@ -22,10 +12,7 @@ from scanner import A11yIssue
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent
-for env_path in [PROJECT_ROOT / ".env",
-                 PROJECT_ROOT / "a11y-audit-rag" / "a11y-audit" / ".env"]:
-    if env_path.exists():
-        load_dotenv(dotenv_path=env_path, override=False)
+load_dotenv(dotenv_path=PROJECT_ROOT / ".env", override=False)
 
 _openai_key    = os.getenv("OPENAI_API_KEY", "")
 _gemini_key    = os.getenv("GEMINI_API_KEY", "")

@@ -14,9 +14,6 @@ google-generativeai>=0.8.0
 # Vektor-databas för RAG
 chromadb==0.5.15
 
-# HTML-generering
-weasyprint==68.1
-
 # Miljövariabler
 python-dotenv==1.0.1
 

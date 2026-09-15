@@ -1,18 +1,4 @@
-"""
-scanner.py
 
-Detta är fakta-motorn i vårt verktyg.
-
-Vad den gör:
-1. Öppnar en riktig webbläsare (Chromium) i bakgrunden
-2. Navigerar till den URL som användaren skickat in
-3. Injicerar axe-core (industristandarden för tillgänglighetsregler) i sidan
-4. Kör axe-core och samlar in alla fel den hittar
-5. Returnerar en strukturerad lista med fel
-
-VIKTIGT: All information här är FAKTA från axe-core, inget är genererat av AI.
-LLM:en får bara se den här datan, den hittar aldrig på egna fel.
-"""
 
 import asyncio
 import base64
