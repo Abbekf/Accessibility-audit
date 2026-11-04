@@ -8,23 +8,23 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --navy:     #0d1b4b;
-  --blue:     #1a4db5;
-  --blue-lt:  #eaf2ff;
-  --critical: #c0392b;
-  --critical-lt: #fdf0ef;
-  --serious:  #e05a00;
-  --serious-lt: #fff4ed;
-  --moderate: #b8860b;
-  --moderate-lt: #fffbeb;
-  --minor:    #5a6a7a;
-  --minor-lt: #f4f6f8;
-  --border:   #e2e8f4;
-  --bg:       #f0f4fa;
+  --navy:     #251e30;
+  --blue:     #b63d50;
+  --blue-lt:  #fff0ec;
+  --critical: #ff535f;
+  --critical-lt: #ffe4e5;
+  --serious:  #ff921b;
+  --serious-lt: #fff0e2;
+  --moderate: #a36a00;
+  --moderate-lt: #fff6dc;
+  --minor:    #a99faf;
+  --minor-lt: #f1edf2;
+  --border:   #eae0e5;
+  --bg:       #fff9f6;
   --white:    #fff;
-  --text:     #1a1a2e;
-  --muted:    #64748b;
-  --sidebar-w: 272px;
+  --text:     #171526;
+  --muted:    #70697e;
+  --sidebar-w: 260px;
   --radius:   10px;
   --shadow:   0 1px 3px rgba(13,27,75,0.06), 0 4px 16px rgba(13,27,75,0.04);
 }
@@ -66,7 +66,7 @@ body {
   font-size: 9.5px;
   letter-spacing: 2px;
   text-transform: uppercase;
-  color: #6a90d8;
+  color: #d5b2ba;
   margin-bottom: 6px;
 }
 .sb-title {
@@ -77,12 +77,12 @@ body {
 }
 .sb-url {
   font-size: 11px;
-  color: #8aaae0;
+  color: #d6c3d6;
   margin-top: 5px;
   word-break: break-all;
   line-height: 1.4;
 }
-.sb-date { font-size: 10px; color: #4e6a9a; margin-top: 3px; }
+.sb-date { font-size: 10px; color: #baa9bd; margin-top: 3px; }
 
 .sb-logo-wrap { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
 .sb-logo {
@@ -114,7 +114,7 @@ body {
   font-size: 9.5px;
   letter-spacing: 1.8px;
   text-transform: uppercase;
-  color: #4a6080;
+  color: #b9a6bd;
   margin-bottom: 2px;
 }
 .sev-row {
@@ -123,13 +123,13 @@ body {
   gap: 9px;
 }
 .sev-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-.sev-label { font-size: 11.5px; color: #a0b8d8; flex: 1; }
+.sev-label { font-size: 11.5px; color: #d1c1d5; flex: 1; }
 .sev-num { font-size: 13px; font-weight: 800; color: #fff; min-width: 24px; text-align: right; }
 .sev-bar-wrap { flex: 2; height: 5px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; }
 .sev-bar { height: 100%; border-radius: 3px; transition: width 0.4s ease; }
 .d-critical { background: var(--critical); }
 .d-serious  { background: var(--serious); }
-.d-moderate { background: #d4a017; }
+.d-moderate { background: #ffc52b; }
 .d-minor    { background: var(--minor); }
 
 /* Sidebar nav */
@@ -138,7 +138,7 @@ body {
   font-size: 9.5px;
   letter-spacing: 1.8px;
   text-transform: uppercase;
-  color: #4a6080;
+  color: #b9a6bd;
   padding: 10px 18px 5px;
 }
 .nav-item {
@@ -153,11 +153,11 @@ body {
 .nav-item:hover { background: rgba(255,255,255,0.05); }
 .nav-item.active {
   background: rgba(26,77,181,0.22);
-  border-left-color: #7eaaff;
+  border-left-color: #ffc1b4;
 }
 .nav-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
 .nav-body { flex: 1; min-width: 0; }
-.nav-name { font-size: 12.5px; color: #c8d8f0; line-height: 1.35; }
+.nav-name { font-size: 12.5px; color: #e6dbe8; line-height: 1.35; }
 .nav-item.active .nav-name { color: #fff; font-weight: 600; }
 .nav-mini-bars { display: flex; gap: 2px; margin-top: 5px; height: 4px; }
 .nmb { border-radius: 2px; flex-shrink: 0; }
@@ -172,9 +172,9 @@ body {
 }
 .nb-critical { background: var(--critical); }
 .nb-serious  { background: var(--serious); }
-.nb-moderate { background: #d4a017; color: #222; }
+.nb-moderate { background: #ffc52b; color: #222; }
 .nb-minor    { background: var(--minor); }
-.nb-none     { background: #2a4070; }
+.nb-none     { background: #58455d; }
 
 /* ── Main ── */
 .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
@@ -256,7 +256,7 @@ body {
 .fbtn.on  { background: var(--navy);    color: #fff; border-color: var(--navy); }
 .fbtn.fc.on { background: var(--critical); border-color: var(--critical); }
 .fbtn.fs.on { background: var(--serious);  border-color: var(--serious); }
-.fbtn.fm.on { background: #d4a017;         border-color: #d4a017; color: #222; }
+.fbtn.fm.on { background: #ffc52b;         border-color: #ffc52b; color: #222; }
 .fbtn.fi.on { background: var(--minor);    border-color: var(--minor); }
 
 /* ── Content ── */
@@ -286,7 +286,7 @@ body {
 .dash-card.active-filter { outline: 2px solid currentColor; outline-offset: 2px; }
 .dash-card.dc-critical { border-top-color: var(--critical); }
 .dash-card.dc-serious  { border-top-color: var(--serious); }
-.dash-card.dc-moderate { border-top-color: #d4a017; }
+.dash-card.dc-moderate { border-top-color: #ffc52b; }
 .dash-card.dc-minor    { border-top-color: var(--minor); }
 .dash-num {
   font-size: 32px;
@@ -299,7 +299,7 @@ body {
 .dash-bar { height: 100%; border-radius: 2px; }
 .dash-card.dc-critical .dash-bar { background: var(--critical); }
 .dash-card.dc-serious  .dash-bar { background: var(--serious); }
-.dash-card.dc-moderate .dash-bar { background: #d4a017; }
+.dash-card.dc-moderate .dash-bar { background: #ffc52b; }
 .dash-card.dc-minor    .dash-bar { background: var(--minor); }
 
 /* Cat header */
@@ -327,7 +327,7 @@ body {
   white-space: nowrap;
   transition: background 0.12s;
 }
-.cat-action-btn:hover { background: #d4e8ff; }
+.cat-action-btn:hover { background: #ffe0d8; }
 
 /* ── Issue card ── */
 .issue-card {
@@ -343,7 +343,7 @@ body {
 .issue-card:hover { box-shadow: 0 2px 18px rgba(13,27,75,0.09); }
 .issue-card[data-impact="critical"] { border-left-color: var(--critical); }
 .issue-card[data-impact="serious"]  { border-left-color: var(--serious); }
-.issue-card[data-impact="moderate"] { border-left-color: #d4a017; }
+.issue-card[data-impact="moderate"] { border-left-color: #ffc52b; }
 .issue-card[data-impact="minor"]    { border-left-color: var(--minor); }
 
 /* Card summary */
@@ -352,7 +352,7 @@ body {
   cursor: pointer;
   user-select: none;
 }
-.card-summary:hover { background: #fafbff; }
+.card-summary:hover { background: #fff9f6; }
 
 .card-meta-row {
   display: flex;
@@ -373,7 +373,7 @@ body {
 }
 .ib-critical { background: var(--critical); }
 .ib-serious  { background: var(--serious); }
-.ib-moderate { background: #d4a017; color: #222; }
+.ib-moderate { background: #ffc52b; color: #222; }
 .ib-minor    { background: var(--minor); }
 
 .card-wcag {
@@ -388,8 +388,8 @@ body {
 .card-rule {
   font-size: 10px;
   color: var(--muted);
-  background: #f0f4ff;
-  border: 1px solid #dde6ff;
+  background: #fff3ee;
+  border: 1px solid #eedbd8;
   padding: 1px 7px;
   border-radius: 4px;
   white-space: nowrap;
@@ -430,9 +430,9 @@ body {
 .preview-pill {
   font-family: "Consolas", monospace;
   font-size: 10.5px;
-  background: #f2f5fc;
-  border: 1px solid #dce5f5;
-  color: #3a4a70;
+  background: #fff6f1;
+  border: 1px solid #eadcde;
+  color: #6c526b;
   padding: 2px 8px;
   border-radius: 4px;
   white-space: nowrap;
@@ -473,8 +473,8 @@ body {
 .fix-body p  { margin-bottom: 8px; }
 .fix-body p:last-child { margin-bottom: 0; }
 .fix-body code {
-  background: #eef2ff;
-  color: #1a3fa0;
+  background: #fff0eb;
+  color: #a34453;
   padding: 1px 6px;
   border-radius: 3px;
   font-size: 12px;
@@ -498,7 +498,7 @@ body {
   display: flex;
   align-items: flex-start;
   gap: 7px;
-  background: #fffbeb;
+  background: #fff6dc;
   border: 1px solid #f0c040;
   border-radius: 6px;
   padding: 8px 12px;
@@ -577,7 +577,7 @@ body {
   transition: all 0.12s;
   white-space: nowrap;
 }
-.el-status-btn:hover { border-color: #b0c8f0; }
+.el-status-btn:hover { border-color: #dda5a5; }
 .el-status-btn.el-fixed   { background: #ecfdf5; color: #15803d; border-color: #86efac; }
 .el-status-btn.el-wontfix { background: #f5f5f5; color: #6b7280; border-color: #d1d5db; }
 .el-resolved-label {
@@ -602,11 +602,11 @@ body {
 .el-html-hidden {
   font-family: "Consolas", monospace;
   font-size: 11px;
-  background: #f4f7ff;
-  border: 1px solid #dce6ff;
+  background: #fff4ee;
+  border: 1px solid #eddbd8;
   border-radius: 5px;
   padding: 6px 10px;
-  color: #2a3a70;
+  color: #6c526b;
   word-break: break-all;
   cursor: pointer;
   transition: background 0.1s;
@@ -645,20 +645,20 @@ body {
 
 .vision-fix {
   font-size: 11.5px;
-  background: #f0f7ff;
-  border: 1px solid #bdd9ff;
+  background: #fff4ed;
+  border: 1px solid #edd1c9;
   border-radius: 5px;
   padding: 6px 10px;
   margin-top: 5px;
-  color: #1a3a70;
+  color: #734550;
   line-height: 1.55;
   word-break: break-word;
   overflow-wrap: break-word;
   white-space: normal;
 }
 .vision-fix code {
-  background: #ddeeff;
-  color: #1a3fa0;
+  background: #ffe8df;
+  color: #a34453;
   padding: 1px 5px;
   border-radius: 3px;
   font-size: 11px;
@@ -680,7 +680,7 @@ body {
   transition: background 0.1s, color 0.1s;
   white-space: nowrap;
 }
-.el-btn:hover { background: var(--blue-lt); color: var(--blue); border-color: #b0c8f0; }
+.el-btn:hover { background: var(--blue-lt); color: var(--blue); border-color: #dda5a5; }
 
 /* ── Status buttons ── */
 .status-bar {
@@ -688,7 +688,7 @@ body {
   gap: 6px;
   padding: 8px 16px 10px;
   border-top: 1px solid var(--border);
-  background: #fafbff;
+  background: #fff9f6;
 }
 .status-btn {
   display: flex;
@@ -705,7 +705,7 @@ body {
   font-family: inherit;
   transition: all 0.14s;
 }
-.status-btn:hover { border-color: #b0c8f0; }
+.status-btn:hover { border-color: #dda5a5; }
 .status-btn.fixed { background: #ecfdf5; color: #15803d; border-color: #86efac; }
 .status-btn.wontfix { background: #f5f5f5; color: #6b7280; border-color: #d1d5db; }
 
@@ -743,7 +743,7 @@ body {
   font-size: 9.5px;
   letter-spacing: 1.8px;
   text-transform: uppercase;
-  color: #4a6080;
+  color: #b9a6bd;
   margin-bottom: 6px;
 }
 .progress-track {
@@ -755,13 +755,13 @@ body {
 }
 .progress-fill-fixed   { height: 100%; background: #22c55e; border-radius: 3px; transition: width 0.35s ease; float: left; }
 .progress-fill-wontfix { height: 100%; background: #9ca3af; border-radius: 3px; transition: width 0.35s ease; float: left; }
-.progress-text { font-size: 10px; color: #6a90d8; }
+.progress-text { font-size: 10px; color: #d5b2ba; }
 .el-selector {
   font-family: "Consolas", monospace;
   font-size: 10px;
   color: #5a6a8a;
-  background: #f4f7ff;
-  border: 1px solid #e0e8ff;
+  background: #fff4ee;
+  border: 1px solid #edddda;
   border-radius: 4px;
   padding: 3px 8px;
   margin-top: 4px;
@@ -784,7 +784,7 @@ body {
   align-items: center;
   gap: 5px;
 }
-.show-more-btn:hover { background: var(--blue-lt); border-color: #b0c8f0; }
+.show-more-btn:hover { background: var(--blue-lt); border-color: #dda5a5; }
 
 /* No-results */
 .no-results {
@@ -857,13 +857,13 @@ mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
 .sb-donut-legend { flex: 1; display: flex; flex-direction: column; gap: 5px; }
 .sb-dl-row { display: flex; align-items: center; gap: 7px; font-size: 11px; }
 .sb-dl-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.sb-dl-label { color: #8aaae0; flex: 1; }
+.sb-dl-label { color: #d6c3d6; flex: 1; }
 .sb-dl-num { font-weight: 700; color: #fff; }
-.sb-dl-pct { font-size: 9.5px; color: #4a6080; }
+.sb-dl-pct { font-size: 9.5px; color: #b9a6bd; }
 
 /* ── Intro hero ── */
 .intro-hero {
-  background: linear-gradient(135deg, var(--navy) 0%, #162660 100%);
+  background: linear-gradient(135deg, var(--navy) 0%, #38273c 100%);
   border-radius: var(--radius);
   padding: 24px 28px;
   margin-bottom: 20px;
@@ -889,7 +889,7 @@ mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
   font-weight: 700;
   letter-spacing: 2px;
   text-transform: uppercase;
-  color: #7eaaff;
+  color: #ffc1b4;
   margin-bottom: 6px;
 }
 .intro-hero-title {
@@ -941,9 +941,9 @@ mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
   font-weight: 600;
   padding: 2px 8px;
   border-radius: 10px;
-  background: #eef4ff;
-  color: #1a4db5;
-  border: 1px solid #d0e0ff;
+  background: #fff0e9;
+  color: #b63d50;
+  border: 1px solid #eed4cc;
 }
 
 /* ── Issue card improvements ── */
@@ -984,10 +984,10 @@ mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
   .print-header {
     display: block !important;
     padding: 20px 0 16px;
-    border-bottom: 3px solid #0d1b4b;
+    border-bottom: 3px solid #251e30;
     margin-bottom: 20px;
   }
-  .print-header h1 { font-size: 20px; color: #0d1b4b; margin-bottom: 4px; }
+  .print-header h1 { font-size: 20px; color: #251e30; margin-bottom: 4px; }
   .print-header .print-meta { font-size: 11px; color: #666; margin-bottom: 12px; }
   .print-summary-row {
     display: flex !important;
@@ -1000,10 +1000,10 @@ mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
     font-size: 11px;
     font-weight: 700;
   }
-  .psc-critical  { background: #fdf0ef; color: #c0392b; border: 1px solid #c0392b; }
-  .psc-serious   { background: #fff4ed; color: #e05a00; border: 1px solid #e05a00; }
-  .psc-moderate  { background: #fffbeb; color: #b8860b; border: 1px solid #b8860b; }
-  .psc-minor     { background: #f4f6f8; color: #5a6a7a; border: 1px solid #5a6a7a; }
+  .psc-critical  { background: #ffe4e5; color: #ff535f; border: 1px solid #ff535f; }
+  .psc-serious   { background: #fff0e2; color: #ff921b; border: 1px solid #ff921b; }
+  .psc-moderate  { background: #fff6dc; color: #a36a00; border: 1px solid #a36a00; }
+  .psc-minor     { background: #f1edf2; color: #a99faf; border: 1px solid #a99faf; }
   .psc-done      { background: #ecfdf5; color: #15803d; border: 1px solid #86efac; }
   .psc-wontfix   { background: #f5f5f5; color: #6b7280; border: 1px solid #d1d5db; }
 
@@ -1018,7 +1018,7 @@ mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
   }
   .psb-fixed   { background: #ecfdf5; color: #15803d; }
   .psb-wontfix { background: #f5f5f5; color: #6b7280; }
-  .psb-open    { background: #fdf0ef; color: #c0392b; }
+  .psb-open    { background: #ffe4e5; color: #ff535f; }
 
   /* resolved-kort i print */
   .issue-card.resolved-fixed   { border-left-color: #86efac !important; opacity: 1 !important; }
@@ -1036,6 +1036,80 @@ mark.hl { background: #fff3a0; border-radius: 2px; padding: 0 1px; }
 /* Print-header syns bara vid utskrift */
 .print-header { display: none; }
 .print-status-badge { display: none; }
+
+/* Warm dashboard theme, shared with the application shell. */
+.brand { display:flex; align-items:center; gap:10px; font-size:17px; font-weight:750; letter-spacing:-.6px; white-space:nowrap; }
+.brand-symbol { display:inline-flex; align-items:center; justify-content:center; width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg,#ffab8e,#ff586c); color:#272031; flex-shrink:0; }
+.brand-symbol svg { width:27px; height:27px; }
+.report-brand { padding:24px 17px 12px; }
+.embedded .report-brand { display:none; }
+.ib-critical, .nb-critical, .fbtn.fc.on { color:#651521; }
+.ib-serious, .nb-serious, .fbtn.fs.on { color:#542500; }
+.ib-minor, .nb-minor, .fbtn.fi.on { color:#302737; }
+.psc-critical { color:#922433; }
+.psc-serious { color:#8c410c; }
+.psc-minor { color:#635b6d; }
+.overview-link { display:flex; align-items:center; gap:12px; margin:10px 17px 4px; padding:14px 18px; border-radius:10px; background:#65424f; color:#fff1ec; text-decoration:none; font-size:15px; font-weight:600; }
+.sidebar { background:linear-gradient(155deg,#211c2d,#302436); }
+.sb-header { padding-top:18px; }
+.sb-title { font-size:16px; }
+.sb-eyebrow { font-size:9px; letter-spacing:1.2px; }
+.sb-dl-pct { color:#b9a6bd; }
+.sb-summary-title, .sb-nav-label, .sb-progress-label { color:#c4b0c8; }
+.nav-item { margin:3px 12px; border-radius:9px; border-left:0; }
+.nav-item.active { background:#65424f; }
+.content { max-width:1600px; width:100%; padding:0 28px 36px; }
+.main { min-width:0; }
+.topbar { flex-wrap:wrap; padding:14px 24px; box-shadow:none; background:#fffcfb; gap:10px; }
+.filter-row { flex-wrap:wrap; flex-shrink:1; }
+.fbtn { padding:6px 11px; }
+#search-input { border-radius:9px; }
+.intro-hero { border-radius:0; margin:0 -28px 25px; padding:30px; background:linear-gradient(110deg,#fffaf8 20%,#fff0ec); min-height:235px; border-bottom:1px solid var(--border); color:var(--text); gap:10px; }
+.intro-hero::after { display:none; }
+.intro-hero-title { font-size:clamp(27px,3vw,40px); letter-spacing:-1.3px; line-height:1.15; margin:10px 0; }
+.intro-hero-eyebrow { color:#9a5c58; font-size:11px; letter-spacing:1.4px; }
+.intro-hero-url { color:var(--muted); font-size:14px; margin-bottom:18px; }
+.intro-hero-text { position:relative; z-index:1; }
+.intro-chip { font-size:13px; padding:9px 15px; color:var(--text); border:1px solid #eddcde; }
+.ic-critical { background:#ffe0e2; color:#922433; border-color:#ffd4d8; }
+.ic-serious { background:#ffecde; color:#8c410c; border-color:#ffe0cc; }
+.ic-moderate { background:#fff3d9; color:#7c590e; border-color:#ffebc7; }
+.ic-minor { background:#f2edf2; color:#635b6d; }
+.laptop-art { width:33%; max-width:370px; flex-shrink:0; align-self:stretch; }
+.dash-card { border:1px solid var(--border) !important; border-radius:17px; padding:20px 23px; gap:9px; }
+.dash-num { font-size:38px; color:var(--text); letter-spacing:-1px; }
+.dash-label { font-size:12px; }
+.dash-bar-wrap { height:7px; background:#f0eaed; border-radius:5px; }
+.dashboard { gap:18px; margin-bottom:24px; }
+.chart-grid { display:grid; grid-template-columns:1fr 1.1fr; gap:24px; margin-bottom:30px; }
+.chart-panel { min-width:0; background:#fffdfc; border:1px solid var(--border); border-radius:18px; padding:23px; box-shadow:var(--shadow); }
+.chart-panel h2 { font-size:19px; letter-spacing:-.5px; margin-bottom:18px; line-height:1.3; }
+.distribution-chart { display:flex; align-items:center; gap:24px; }
+.overview-donut { position:relative; width:164px; height:164px; flex-shrink:0; }
+.overview-donut svg { width:100%; height:100%; transform:rotate(-90deg); }
+.donut-center { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:15px; line-height:1.3; }
+.donut-center strong { font-size:36px; letter-spacing:-1px; }
+.chart-legend { flex:1; min-width:0; display:grid; gap:13px; }
+.legend-row { display:flex; align-items:center; gap:9px; font-size:12px; }
+.legend-dot { width:11px; height:11px; border-radius:50%; flex-shrink:0; }
+.legend-name { flex:1; }
+.legend-percent { color:var(--muted); width:33px; text-align:right; }
+.category-chart { display:grid; gap:13px; max-height:210px; overflow-y:auto; }
+.category-chart-row { width:100%; display:grid; grid-template-columns:minmax(100px,1fr) minmax(40px,1.2fr) 26px; align-items:center; gap:14px; border:0; background:transparent; color:var(--text); font:inherit; font-size:12px; text-align:left; cursor:pointer; padding:4px; border-radius:5px; }
+.category-chart-row:hover { background:var(--blue-lt); }
+.category-chart-row strong { text-align:right; }
+.category-track { height:10px; background:#f1ebee; border-radius:8px; overflow:hidden; }
+.category-fill { height:100%; display:block; border-radius:8px; background:linear-gradient(100deg,#ff865f,#ff535f); }
+.issue-card { border-radius:14px; }
+.card-summary { padding:18px 20px; }
+.user-group-pill { color:#8d3f50; }
+.print-btn { background:#b63d50 !important; border-color:#b63d50 !important; }
+:focus-visible { outline:3px solid #b63d50; outline-offset:3px; }
+@media (min-width:1550px) { :root { --sidebar-w:290px; } .brand { font-size:19px; } .intro-hero { min-height:265px; } }
+@media (max-width:1150px) { :root { --sidebar-w:230px; } .brand { font-size:15px; } .chart-grid { grid-template-columns:1fr; } .chart-panel { padding:22px; } .intro-hero { padding:25px; } .intro-chip { padding:7px 10px; font-size:12px; } .dashboard { gap:12px; } .dash-card { padding:18px; } }
+@media (max-width:760px) { .layout { flex-direction:column; } .sidebar { position:static; height:auto; width:100%; min-width:0; overflow:visible; } .report-brand,.sb-header,.sb-donut-wrap,.sb-summary,.sb-progress,.overview-link { display:none; } .sb-nav { padding:8px; display:flex; gap:5px; overflow-x:auto; } .sb-nav-label { display:none; } .nav-item { flex-shrink:0; margin:0; padding:10px 12px; } .nav-name { font-size:12px; } .nav-mini-bars { display:none; } .main { width:100%; } .topbar { position:static; padding:14px; } .topbar-title { max-width:180px; } .search-wrap { min-width:145px; } .content { padding:0 16px 25px; } .intro-hero { margin:0 -16px 18px; min-height:200px; padding:24px 20px; } .intro-hero-title { font-size:29px; white-space:normal; } .intro-hero-eyebrow { font-size:9px; } .laptop-art { display:none; } .intro-hero-url { font-size:12px; } .dashboard { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-bottom:18px; } .dash-num { font-size:32px; } .chart-grid { gap:16px; margin-bottom:24px; } .distribution-chart { gap:18px; } .overview-donut { width:125px; height:125px; } .legend-row { font-size:11px; gap:6px; } .legend-percent { width:27px; } .chart-panel { padding:18px; } .cat-header { gap:8px; } .cat-title { font-size:17px; } .card-summary { padding:14px; } .card-panel { min-width:0; } .card-body { grid-template-columns:1fr; } .el-selector-inline, .el-selector, .card-wcag { overflow-wrap:anywhere; } .el-actions { flex-wrap:wrap; } }
+@media print { .report-brand,.overview-link,.chart-grid,.intro-hero { display:none !important; } .content { padding:0; } .sidebar { display:none !important; } }
+
 </style>
 <script>
 const _URL_KEY     = '{{ url | replace("https://","") | replace("http://","") | replace("'", "") }}';
@@ -1206,7 +1280,7 @@ function updateDashboardCounts() {
     // Uppdatera sidebar sev-num
     if (sevEl) {
       if (resolvedTotal > 0) {
-        sevEl.innerHTML = `${remaining}<span style="font-size:9px;font-weight:500;color:#4e6a9a"> /${orig}</span>`;
+        sevEl.innerHTML = `${remaining}<span style="font-size:9px;font-weight:500;color:#baa9bd"> /${orig}</span>`;
       } else {
         sevEl.textContent = orig;
       }
@@ -1698,6 +1772,13 @@ window.addEventListener('message', (e) => {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.nav-item, .dash-card, .card-summary').forEach(control => {
+    control.tabIndex = 0;
+    control.setAttribute('role', 'button');
+    control.addEventListener('keydown', event => {
+      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); control.click(); }
+    });
+  });
   restoreStatuses();
   restoreElStatuses();
   updateDashboardCounts();
@@ -1707,10 +1788,13 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </head>
 <body>
+<script>if (window.self !== window.top) document.body.classList.add('embedded');</script>
 <div class="layout">
 
   <!-- ── Sidebar ── -->
   <aside class="sidebar">
+    <div class="report-brand brand"><span class="brand-symbol" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><circle cx="16" cy="7" r="3" fill="currentColor"/><path d="M7 13L16 15L25 13M16 15V21M16 20L10 29M16 20L22 29" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></span><span>Tillgänglighetsrevisor</span></div>
+    <a class="overview-link" href="#overview">⌂ &nbsp; Översikt</a>
     <div class="sb-header">
       <div class="sb-eyebrow">Tillgänglighetsrapport · WCAG 2.2</div>
       <div class="sb-title">Granskningsresultat</div>
@@ -1729,10 +1813,10 @@ document.addEventListener('DOMContentLoaded', () => {
       <svg class="sb-donut" width="84" height="84" viewBox="0 0 84 84">
         <circle cx="42" cy="42" r="{{ r }}" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="11"/>
         {% for impact, color in [
-            ('critical', '#c0392b'),
-            ('serious',  '#e05a00'),
-            ('moderate', '#d4a017'),
-            ('minor',    '#5a6a7a')
+            ('critical', '#ff535f'),
+            ('serious',  '#ff921b'),
+            ('moderate', '#ffc52b'),
+            ('minor',    '#a99faf')
         ] %}
           {% set cnt = count_by_impact[impact] %}
           {% if cnt > 0 %}
@@ -1854,7 +1938,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <button class="fbtn fm"  onclick="setFilter('moderate', this)">Måttliga</button>
         <button class="fbtn fi"  onclick="setFilter('minor',    this)">Mindre</button>
         <button class="fbtn on" id="btn-resolved" onclick="toggleResolved(this)" title="Visa/dölj hanterade problem" style="margin-left:4px">Dölj hanterade</button>
-        <button class="fbtn print-btn" onclick="printReport()" title="Skapa PDF-rapport" style="margin-left:8px;background:#1a4db5;color:#fff;border-color:#1a4db5">📄 Skapa rapport</button>
+        <button class="fbtn print-btn" onclick="printReport()" title="Skapa PDF-rapport" style="margin-left:8px;background:#b63d50;color:#fff;border-color:#b63d50">📄 Skapa rapport</button>
       </div>
     </div>
 
@@ -1862,11 +1946,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
       <!-- Intro hero -->
       {% set total = count_by_impact.critical + count_by_impact.serious + count_by_impact.moderate + count_by_impact.minor %}
-      <div class="intro-hero">
+      <div class="intro-hero" id="overview">
         <div class="intro-hero-text">
           <div class="intro-hero-eyebrow">WCAG 2.2 · Tillgänglighetsrapport · {{ scan_date }}</div>
-          <div class="intro-hero-title">{{ site_name }}</div>
-          <div class="intro-hero-url">{{ url }}</div>
+          <h1 class="intro-hero-title">Granskningsresultat</h1>
+          <div class="intro-hero-url">Sammanfattning av tillgänglighetsproblem på {{ url }}</div>
           <div class="intro-chips">
             {% if count_by_impact.critical > 0 %}<span class="intro-chip ic-critical">🔴 {{ count_by_impact.critical }} kritiska</span>{% endif %}
             {% if count_by_impact.serious  > 0 %}<span class="intro-chip ic-serious">🟠 {{ count_by_impact.serious }} allvarliga</span>{% endif %}
@@ -1874,11 +1958,16 @@ document.addEventListener('DOMContentLoaded', () => {
             {% if count_by_impact.minor    > 0 %}<span class="intro-chip ic-minor">⚪ {{ count_by_impact.minor }} mindre</span>{% endif %}
           </div>
         </div>
-        <svg class="intro-hero-svg" width="64" height="64" viewBox="0 0 64 64" opacity="0.25">
-          <circle cx="32" cy="32" r="28" fill="none" stroke="#7eaaff" stroke-width="2"/>
-          <path d="M32 12 L32 32 L46 46" fill="none" stroke="#7eaaff" stroke-width="2.5" stroke-linecap="round"/>
-          <circle cx="32" cy="32" r="3" fill="#7eaaff"/>
-        </svg>
+<svg class="laptop-art" viewBox="0 0 440 280" fill="none" aria-hidden="true">
+<defs><linearGradient id="screen" x1="90" y1="50" x2="350" y2="240" gradientUnits="userSpaceOnUse"><stop stop-color="#fffaf7"/><stop offset="1" stop-color="#ffb9aa"/></linearGradient><linearGradient id="coral" x2="1" y2="1"><stop stop-color="#ff997e"/><stop offset="1" stop-color="#ff4d60"/></linearGradient></defs>
+<path d="M12 230C94 218 110 41 229 19S358 89 435 58V274H12Z" fill="#ffd9d5"/><path d="M0 254C98 235 163 120 263 124S369 195 440 140V280H0Z" fill="#ffb5a8" opacity=".45"/>
+<path d="M98 49Q99 40 109 40H372Q384 40 382 52L361 235H77Z" fill="#252232"/><path d="M108 51H371L351 223H88Z" fill="url(#screen)"/>
+<path d="M110 52H369L367 70H108Z" fill="#fffaf9"/><circle cx="119" cy="61" r="3" fill="#ff6664"/><path d="M128 61H158M275 61H299M308 61H331" stroke="#d7c7cb" stroke-width="3" stroke-linecap="round"/>
+<path d="M121 99H187M119 118H219M117 132H207M115 146H185" stroke="#eab6b2" stroke-width="7" stroke-linecap="round"/>
+<rect x="108" y="172" width="67" height="22" rx="6" fill="#ff9c8c"/>
+<circle cx="291" cy="143" r="46" fill="url(#coral)"/><circle cx="291" cy="119" r="6" fill="white"/><path d="M270 135Q291 143 312 135M291 143V157M291 155L279 177M291 155L303 177" stroke="white" stroke-width="5" stroke-linecap="round"/>
+<path d="M53 235H390V241Q381 250 356 250H85Q61 250 53 241Z" fill="#a9a5ae"/><path d="M53 235H390V240H53Z" fill="#dcd8dc"/><path d="M191 235H251L247 240H195Z" fill="#8c8892"/>
+</svg>
       </div>
 
       <!-- Print header (dold i normalläge, visas vid utskrift) -->
@@ -1907,6 +1996,40 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
         </div>
         {% endfor %}
+      </div>
+      {% endif %}
+
+
+      {% if total > 0 %}
+      <div class="chart-grid" aria-label="Sammanfattning av granskningen">
+        <section class="chart-panel distribution-chart" aria-label="Problem per allvarlighetsgrad, ursprungligt resultat">
+          <div class="overview-donut">
+            <svg viewBox="0 0 120 120" aria-hidden="true">
+              <circle cx="60" cy="60" r="49" fill="none" stroke="#f1ebee" stroke-width="17"/>
+              {% set chart = namespace(offset=0) %}
+              {% for impact, color in [('critical','#ff535f'),('serious','#ff921b'),('moderate','#ffc52b'),('minor','#a99faf')] %}
+              {% set length = count_by_impact[impact] / total * 307.876 %}
+              <circle cx="60" cy="60" r="49" fill="none" stroke="{{ color }}" stroke-width="17" stroke-dasharray="{{ length }} 307.876" stroke-dashoffset="{{ -chart.offset }}"/>
+              {% set chart.offset = chart.offset + length %}
+              {% endfor %}
+            </svg>
+            <div class="donut-center"><strong>{{ total }}</strong>problem</div>
+          </div>
+          <div class="chart-legend">
+            {% for impact, label, color in [('critical','Kritiska','#ff535f'),('serious','Allvarliga','#ff921b'),('moderate','Måttliga','#ffc52b'),('minor','Mindre','#a99faf')] %}
+            <div class="legend-row"><span class="legend-dot" style="background:{{ color }}"></span><span class="legend-name">{{ label }}</span><strong>{{ count_by_impact[impact] }}</strong><span class="legend-percent">{{ (count_by_impact[impact] / total * 100)|round|int }}%</span></div>
+            {% endfor %}
+          </div>
+        </section>
+        <section class="chart-panel"><h2>Problem per kategori</h2><div class="category-chart">
+          {% set largest = namespace(count=1) %}
+          {% for cat in digg_groups %}{% if cat.issues|length > largest.count %}{% set largest.count = cat.issues|length %}{% endif %}{% endfor %}
+          {% for cat in digg_groups %}
+          <button class="category-chart-row" onclick="showCat({{ loop.index0 }}, document.querySelector('.nav-item[data-cat=&quot;{{ loop.index0 }}&quot;]')); document.getElementById('cat-{{ loop.index0 }}').scrollIntoView({block:'start',behavior:'smooth'})" title="Visa problem i {{ cat.category }}">
+            <span>{{ cat.category }}</span><span class="category-track"><span class="category-fill" style="width:{{ cat.issues|length / largest.count * 100 }}%"></span></span><strong>{{ cat.issues|length }}</strong>
+          </button>
+          {% endfor %}
+        </div></section>
       </div>
       {% endif %}
 
