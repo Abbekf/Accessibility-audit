@@ -1,261 +1,139 @@
 <!DOCTYPE html>
 <html lang="sv">
 <head>
-  <meta charset="UTF-8">
-  <title>Tillgänglighetsrevisor</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tillgänglighetsrevisor</title>
+<style>
 
-    html, body {
-      height: 100%;
-      font-family: "Segoe UI", Arial, sans-serif;
-      background: #f4f7fc;
-      color: #1a1a2e;
-    }
-
-    /* ── Top header ── */
-    .header {
-      background: #0d1b4b;
-      padding: 14px 28px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      flex-wrap: wrap;
-      position: relative;
-      z-index: 20;
-    }
-    .header-brand {
-      font-size: 14px;
-      font-weight: 700;
-      color: #fff;
-      white-space: nowrap;
-      letter-spacing: 0.3px;
-    }
-    .header-brand em {
-      font-style: normal;
-      font-weight: 900;
-      font-size: 15px;
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
-      color: #fff;
-      margin-right: 2px;
-    }
-    .header-brand span { color: #7eaaff; }
-
-    .scan-form {
-      display: flex;
-      flex: 1;
-      min-width: 260px;
-      gap: 8px;
-    }
-    .scan-form input[type="text"] {
-      flex: 1;
-      padding: 8px 14px;
-      font-size: 13px;
-      border: 1px solid rgba(255,255,255,0.2);
-      border-radius: 6px;
-      background: rgba(255,255,255,0.1);
-      color: #fff;
-      outline: none;
-      transition: border-color 0.15s, background 0.15s;
-    }
-    .scan-form input[type="text"]::placeholder { color: rgba(255,255,255,0.45); }
-    .scan-form input[type="text"]:focus {
-      border-color: #7eaaff;
-      background: rgba(255,255,255,0.15);
-    }
-    .scan-form button {
-      padding: 8px 20px;
-      background: #1a4db5;
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: background 0.15s;
-    }
-    .scan-form button:hover:not(:disabled) { background: #1a3d9a; }
-    .scan-form button:disabled { background: #3a5070; cursor: not-allowed; }
-    #scan-site-btn {
-      padding: 8px 20px;
-      background: transparent;
-      color: #7eaaff;
-      border: 1px solid #7eaaff;
-      border-radius: 6px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: background 0.15s, color 0.15s;
-    }
-    #scan-site-btn:hover:not(:disabled) { background: rgba(126,170,255,0.15); }
-    #scan-site-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-    .model-picker {
-      display: flex;
-      gap: 6px;
-      align-items: center;
-      flex-shrink: 0;
-    }
-    .model-picker select {
-      padding: 7px 10px;
-      font-size: 12px;
-      border: 1px solid rgba(255,255,255,0.2);
-      border-radius: 6px;
-      background: rgba(255,255,255,0.1);
-      color: #fff;
-      outline: none;
-      cursor: pointer;
-      transition: border-color 0.15s;
-    }
-    .model-picker select:focus { border-color: #7eaaff; }
-    .model-picker select option { background: #0d1b4b; color: #fff; }
-
-    .header-actions {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-    .header-actions a,
-    .header-actions button {
-      padding: 7px 14px;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      text-decoration: none;
-      white-space: nowrap;
-      transition: background 0.15s;
-      border: 1px solid rgba(255,255,255,0.25);
-      background: rgba(255,255,255,0.08);
-      color: #fff;
-    }
-    .header-actions a:hover,
-    .header-actions button:hover { background: rgba(255,255,255,0.16); }
-
-    .open-btn {
-      padding: 7px 14px;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      border: 1px solid rgba(255,255,255,0.25);
-      background: rgba(255,255,255,0.08);
-      color: #fff;
-      transition: background 0.15s;
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-    .open-btn:hover { background: rgba(255,255,255,0.16); }
-
-    .status-bar {
-      width: 100%;
-      padding: 6px 0 0;
-      font-size: 12px;
-      color: #7eaaff;
-      display: none;
-    }
-    .status-bar.error { color: #ff8a80; }
-
-    /* ── Report frame ── */
-    #report-frame {
-      display: none;
-      width: 100%;
-      border: none;
-      flex: 1;
-    }
-
-    .page-body {
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-    }
-
-    /* ── Empty / loading state ── */
-    .empty-state {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      color: #64748b;
-      gap: 10px;
-    }
-    .empty-state .icon { font-size: 40px; }
-    .empty-state h2 { font-size: 18px; color: #0d1b4b; }
-    .empty-state p { font-size: 13px; }
-
-    .loading-state {
-      flex: 1;
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 18px;
-      color: #64748b;
-    }
-    .spinner {
-      width: 48px; height: 48px;
-      border: 4px solid #d0ddf5;
-      border-top-color: #1a4db5;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .loading-state h2 { font-size: 18px; color: #0d1b4b; }
-    .loading-state p  { font-size: 13px; }
-  </style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root { --ink: #171526; --muted: #70697e; --border: #eae0e5; --coral: #ff535f; --sidebar: 260px; }
+html, body { height: 100%; }
+body { font-family: "Segoe UI", system-ui, sans-serif; color: var(--ink); background: radial-gradient(ellipse at 0% 65%, #ffa698 0, transparent 56%), linear-gradient(125deg, #ffe6dd, #fff6f1 60%, #ffc6b7); padding: 24px; }
+button, input, select { font: inherit; }
+button, select, a { -webkit-tap-highlight-color: transparent; }
+button, a, select { touch-action: manipulation; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid #a43c51; outline-offset: 4px; }
+.page-body { height: calc(100dvh - 48px); min-height: 560px; display: grid; grid-template-columns: var(--sidebar) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); border-radius: 25px; background: #fffaf8; overflow: hidden; box-shadow: 0 16px 70px #74342b15; border: 1px solid #ffffffaa; }
+.app-sidebar { grid-column: 1; grid-row: 1 / 3; display: flex; flex-direction: column; padding: 27px 17px; background: linear-gradient(155deg, #211c2d, #302436); color: white; }
+.brand { display: flex; align-items: center; gap: 10px; font-size: 17px; font-weight: 750; white-space: nowrap; letter-spacing: -.6px; }
+.brand-symbol { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #ffab8e, #ff586c); color: #272031; flex-shrink: 0; }
+.brand-symbol svg { width: 27px; height: 27px; }
+.app-nav { margin-top: 38px; display: grid; gap: 10px; }
+.app-nav a { color: #eee7f1; text-decoration: none; display: flex; align-items: center; gap: 15px; padding: 15px 18px; border-radius: 11px; font-size: 15px; }
+.app-nav a.active { background: #65424f; color: #fff2ec; }
+.app-nav a:hover { background: #ffffff12; }
+.app-nav svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+.sidebar-note { margin-top: auto; padding: 22px 15px 0; color: #c4b5ca; font-size: 12px; line-height: 1.8; }
+.sidebar-note strong { display: block; color: #f0d5ce; font-size: 12px; margin-bottom: 4px; }
+.header { grid-column: 2; display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding: 19px 24px; border-bottom: 1px solid var(--border); background: #fffcfb; }
+.scan-form { display: flex; flex: 1; gap: 10px; min-width: 0; flex-wrap: wrap; }
+.scan-form input { flex: 1; width: 100%; min-width: 170px; border: 1px solid var(--border); background: white; border-radius: 11px; color: var(--ink); padding: 12px 16px; font-size: 14px; box-shadow: 0 1px 3px #35223705; }
+.scan-form input::placeholder { color: #70697e; }
+.scan-form button, .header-actions button { padding: 12px 17px; border-radius: 11px; font-size: 13px; font-weight: 700; white-space: nowrap; border: 1px solid #ee4d58; background: linear-gradient(115deg, #ff815e, #ff4d63); color: #fff; box-shadow: 0 3px 10px #ff5c5920; }
+.scan-form button:hover { filter: brightness(.95); }
+#scan-site-btn, .header-actions button { color: var(--ink); background: #fbf7f8; border-color: var(--border); box-shadow: none; }
+.model-picker { display: flex; align-items: center; gap: 8px; }
+.model-picker select { max-width: 185px; padding: 11px 9px; border: 1px solid var(--border); border-radius: 10px; background: #fbf7f8; color: var(--ink); font-size: 12px; cursor: pointer; }
+.header-actions { display: flex; gap: 8px; width: 100%; }
+.status-bar { width: 100%; display: none; color: #746475; font-size: 12px; overflow-wrap: anywhere; }
+.status-bar.error { color: #af293b; }
+button:disabled { opacity: .5; cursor: wait; }
+.empty-state { grid-column: 2; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; }
+.welcome-hero { position: relative; display: flex; align-items: center; min-height: 265px; padding: 30px 34px; border-bottom: 1px solid var(--border); background: linear-gradient(110deg, #fffaf8 20%, #fff1ed); overflow: hidden; }
+.hero-copy { position: relative; z-index: 1; flex: 1; }
+.eyebrow { font-size: 11px; font-weight: 750; letter-spacing: 1.8px; color: #9a5c58; text-transform: uppercase; margin-bottom: 12px; }
+h1 { font-size: clamp(27px, 2.7vw, 42px); letter-spacing: -1.4px; line-height: 1.15; font-weight: 800; }
+.hero-description { margin-top: 12px; font-size: 15px; line-height: 1.6; color: #696175; max-width: 440px; }
+.standard-pill { display: inline-flex; align-items: center; gap: 7px; margin-top: 20px; font-size: 12px; font-weight: 650; color: #8f3c48; background: #ffe5e1; padding: 8px 13px; border-radius: 20px; border: 1px solid #f9d2cb; }
+.laptop-art { width: 37%; max-width: 420px; flex-shrink: 0; align-self: stretch; }
+.overview { padding: 25px 26px 30px; }
+.metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.metric, .panel { background: #fffdfc; border: 1px solid var(--border); border-radius: 17px; box-shadow: 0 4px 14px #45263704; }
+.metric { padding: 19px 21px; }
+.metric-value { font-size: 35px; line-height: 1; font-weight: 750; color: #b8aeba; }
+.metric-label { margin-top: 10px; font-size: 11px; text-transform: uppercase; color: #71677c; font-weight: 700; letter-spacing: .4px; }
+.metric-track { height: 6px; border-radius: 5px; background: #f1ebee; margin-top: 14px; }
+.metric-track::before { content: ''; display: block; height: 6px; width: 28px; border-radius: 5px; background: var(--severity); }
+.overview-panels { display: grid; grid-template-columns: 1fr 1.1fr; gap: 22px; margin-top: 23px; }
+.panel { padding: 24px; }
+.panel h2 { font-size: 18px; letter-spacing: -.4px; }
+.distribution { display: flex; align-items: center; gap: 25px; }
+.empty-ring { width: 140px; height: 140px; border: 19px solid #f0e8eb; border-top-color: #f9d5cf; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0; color: #8d8193; font-size: 11px; }
+.empty-ring strong { color: #a397a6; font-size: 30px; }
+.panel p { color: var(--muted); font-size: 13px; line-height: 1.7; margin-top: 8px; }
+.steps { list-style: none; display: grid; gap: 15px; margin-top: 20px; counter-reset: step; }
+.steps li { display: flex; align-items: center; gap: 12px; font-size: 13px; color: #6c6275; counter-increment: step; }
+.steps li::before { content: counter(step); display: grid; place-items: center; width: 26px; height: 26px; border-radius: 8px; background: #ffede7; color: #a44b4b; font-weight: 700; flex-shrink: 0; }
+.loading-state { grid-column: 2; display: none; min-height: 0; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 32px; gap: 18px; color: #71677c; }
+.loading-state h2 { color: var(--ink); font-size: 22px; overflow-wrap: anywhere; max-width: 100%; }
+.loading-state p { max-width: 480px; font-size: 14px; line-height: 1.7; }
+.spinner { width: 48px; height: 48px; border: 4px solid #f7dfd9; border-top-color: #ff5962; border-radius: 50%; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+#report-frame { display: none; grid-column: 1 / -1; width: 100%; height: 100%; min-height: 0; border: 0; }
+.has-report .app-sidebar { grid-row: 1; padding-bottom: 16px; }
+.has-report .app-nav, .has-report .sidebar-note { display: none; }
+@media (min-width: 1550px) { :root { --sidebar: 290px; } .header { padding: 22px 28px; } .brand { font-size: 19px; } .welcome-hero { min-height: 300px; } .overview { padding: 28px; } }
+@media (max-width: 1150px) { :root { --sidebar: 230px; } .brand { font-size: 15px; } .header { padding: 16px 20px; } .model-picker { flex-wrap: wrap; } .welcome-hero { padding: 28px; } .overview-panels { grid-template-columns: 1fr; } }
+@media (max-width: 760px) { body { padding: 10px; } .page-body { height: calc(100dvh - 20px); min-height: 0; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr); border-radius: 18px; } .app-sidebar, .has-report .app-sidebar { grid-column: 1; grid-row: 1; padding: 15px 20px; } .app-nav, .sidebar-note { display: none; } .header { grid-column: 1; grid-row: 2; padding: 14px; gap: 10px; } .scan-form { flex-basis: 100%; } .scan-form input { flex-basis: 100%; } .scan-form button { flex: 1; padding: 11px 8px; font-size: 12px; } .model-picker { width: 100%; } .model-picker select { flex: 1; max-width: none; min-width: 0; } .header-actions { flex-wrap: wrap; } .empty-state, .loading-state { grid-column: 1; grid-row: 3; } #report-frame { grid-row: 3; } .welcome-hero { min-height: 230px; padding: 25px 20px; } .hero-description { font-size: 13px; } .laptop-art { display: none; } .eyebrow { font-size: 9px; letter-spacing: 1.2px; } h1 { font-size: 30px; } .overview { padding: 18px; } .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .metric { padding: 16px; } .overview-panels { margin-top: 16px; gap: 16px; } .panel { padding: 20px; } .empty-ring { width: 105px; height: 105px; border-width: 14px; } .distribution { gap: 18px; } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 2s; } }
+</style>
 </head>
 <body>
-  <div class="page-body">
-    <!-- Header -->
-    <header class="header">
-      <div class="header-brand">Tillgänglighets<span>revisor</span></div>
-
-      <form class="scan-form" id="scan-form">
-        <input type="text" id="url" placeholder="www.exempel.se" required autocomplete="off">
-        <button type="submit" id="scan-btn" data-mode="page">Granska en sida</button>
-        <button type="button" id="scan-site-btn">Granska alla sidor</button>
-      </form>
-
-      <div class="model-picker">
-        <select id="provider-select" title="Välj AI-leverantör">
-          <option value="openai">OpenAI</option>
-          <option value="claude" selected>Claude</option>
-          <option value="gemini">Gemini</option>
-        </select>
-        <select id="model-select" title="Välj modell"></select>
-      </div>
-
-      <div class="header-actions" id="header-actions" style="display:none;">
-        <button id="save-btn">📄 Skapa rapport</button>
-        <button id="pres-btn">📊 Skapa presentation</button>
-      </div>
-
-      <div class="status-bar" id="status"></div>
-    </header>
-
-    <!-- Empty state -->
-    <div class="empty-state" id="empty-state">
-      <div class="icon">🔍</div>
-      <h2>Ange en URL för att starta</h2>
-      <p>Rapporten visas här direkt när skanningen är klar.</p>
+<div class="page-body">
+  <aside class="app-sidebar" aria-label="Sidomeny">
+    <div class="brand"><span class="brand-symbol" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><circle cx="16" cy="7" r="3" fill="currentColor"/><path d="M7 13L16 15L25 13M16 15V21M16 20L10 29M16 20L22 29" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></span><span>Tillgänglighetsrevisor</span></div>
+    <nav class="app-nav" aria-label="Huvudmeny">
+      <a class="active" href="#empty-state" aria-current="page"><svg viewBox="0 0 24 24"><path d="M3 11L12 3L21 11M5 9V21H10V15H14V21H19V9"/></svg>Översikt</a>
+      <a href="#model-settings"><svg viewBox="0 0 24 24"><path d="M4 7H20M4 17H20"/><circle cx="9" cy="7" r="3" fill="#302436"/><circle cx="16" cy="17" r="3" fill="#302436"/></svg>AI-inställningar</a>
+      <a href="#how-it-works"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8H16M8 12H16M8 16H13"/></svg>Så fungerar det</a>
+    </nav>
+    <div class="sidebar-note"><strong>En webb för alla.</strong>Automatisk granskning med axe-core och AI, med stöd i WCAG 2.2 och EAA.</div>
+  </aside>
+  <header class="header">
+    <form class="scan-form" id="scan-form">
+      <input type="text" id="url" placeholder="Ange webbplats (URL)" aria-label="Webbplats att granska" required autocomplete="url">
+      <button type="submit" id="scan-btn" data-mode="page">▶ &nbsp;Granska webbplats</button>
+      <button type="button" id="scan-site-btn">Granska alla sidor</button>
+    </form>
+    <div class="model-picker" id="model-settings">
+      <select id="provider-select" title="Välj AI-leverantör" aria-label="AI-leverantör"><option value="openai">OpenAI</option><option value="claude" selected>Claude</option><option value="gemini">Gemini</option></select>
+      <select id="model-select" title="Välj modell" aria-label="AI-modell"></select>
     </div>
-
-    <!-- Loading state -->
-    <div class="loading-state" id="loading-state">
-      <div class="spinner"></div>
-      <h2 id="loading-url"></h2>
-      <p id="loading-msg">Granskar sidan… det tar vanligtvis 20–60 sekunder.</p>
+    <div class="header-actions" id="header-actions" style="display:none;"><button id="save-btn">📄 Skapa rapport</button><button id="pres-btn">📊 Skapa presentation</button></div>
+    <div class="status-bar" id="status" role="status" aria-live="polite"></div>
+  </header>
+  <main class="empty-state" id="empty-state">
+    <section class="welcome-hero">
+      <div class="hero-copy"><p class="eyebrow">Tillgänglighetsrapport · WCAG 2.2</p><h1>En mer tillgänglig webb<br>börjar här.</h1><p class="hero-description">Hitta tillgänglighetsproblem på din webbplats och få konkreta förslag på hur du åtgärdar dem.</p><span class="standard-pill">✓ &nbsp;axe-core + AI · med källhänvisningar</span></div>
+      <svg class="laptop-art" viewBox="0 0 440 280" fill="none" aria-hidden="true">
+<defs><linearGradient id="screen" x1="90" y1="50" x2="350" y2="240" gradientUnits="userSpaceOnUse"><stop stop-color="#fffaf7"/><stop offset="1" stop-color="#ffb9aa"/></linearGradient><linearGradient id="coral" x2="1" y2="1"><stop stop-color="#ff997e"/><stop offset="1" stop-color="#ff4d60"/></linearGradient></defs>
+<path d="M12 230C94 218 110 41 229 19S358 89 435 58V274H12Z" fill="#ffd9d5"/><path d="M0 254C98 235 163 120 263 124S369 195 440 140V280H0Z" fill="#ffb5a8" opacity=".45"/>
+<path d="M98 49Q99 40 109 40H372Q384 40 382 52L361 235H77Z" fill="#252232"/><path d="M108 51H371L351 223H88Z" fill="url(#screen)"/>
+<path d="M110 52H369L367 70H108Z" fill="#fffaf9"/><circle cx="119" cy="61" r="3" fill="#ff6664"/><path d="M128 61H158M275 61H299M308 61H331" stroke="#d7c7cb" stroke-width="3" stroke-linecap="round"/>
+<path d="M121 99H187M119 118H219M117 132H207M115 146H185" stroke="#eab6b2" stroke-width="7" stroke-linecap="round"/>
+<rect x="108" y="172" width="67" height="22" rx="6" fill="#ff9c8c"/>
+<circle cx="291" cy="143" r="46" fill="url(#coral)"/><circle cx="291" cy="119" r="6" fill="white"/><path d="M270 135Q291 143 312 135M291 143V157M291 155L279 177M291 155L303 177" stroke="white" stroke-width="5" stroke-linecap="round"/>
+<path d="M53 235H390V241Q381 250 356 250H85Q61 250 53 241Z" fill="#a9a5ae"/><path d="M53 235H390V240H53Z" fill="#dcd8dc"/><path d="M191 235H251L247 240H195Z" fill="#8c8892"/>
+</svg>
+    </section>
+    <div class="overview">
+      <div class="metrics" aria-label="Resultat visas efter granskning">
+        <div class="metric" style="--severity:#ff535f"><div class="metric-value">–</div><div class="metric-label">Kritiska</div><div class="metric-track"></div></div>
+        <div class="metric" style="--severity:#ff921b"><div class="metric-value">–</div><div class="metric-label">Allvarliga</div><div class="metric-track"></div></div>
+        <div class="metric" style="--severity:#ffc52b"><div class="metric-value">–</div><div class="metric-label">Måttliga</div><div class="metric-track"></div></div>
+        <div class="metric" style="--severity:#a99faf"><div class="metric-value">–</div><div class="metric-label">Mindre</div><div class="metric-track"></div></div>
+      </div>
+      <div class="overview-panels">
+        <section class="panel distribution"><div class="empty-ring" aria-hidden="true"><strong>–</strong>problem</div><div><h2>Din översikt, samlad.</h2><p>Efter granskningen ser du problemens allvarlighetsgrad, kategorier och vad som behöver åtgärdas.</p></div></section>
+        <section class="panel" id="how-it-works"><h2>Från insikt till åtgärd</h2><ol class="steps"><li>Ange en webbadress och välj AI-modell.</li><li>Granska en sida eller hela webbplatsen.</li><li>Följ upp åtgärder och exportera din rapport.</li></ol></section>
+      </div>
     </div>
-
-    <!-- Report -->
-    <iframe id="report-frame" title="Tillgänglighetsrapport"></iframe>
-  </div>
-
+  </main>
+  <div class="loading-state" id="loading-state" role="status" aria-live="polite"><div class="spinner" aria-hidden="true"></div><h2 id="loading-url"></h2><p id="loading-msg">Granskar sidan… det tar vanligtvis 20–60 sekunder.</p></div>
+  <iframe id="report-frame" title="Tillgänglighetsrapport"></iframe>
+</div>
   <script>
     const MODELS = {
       openai:  [
@@ -310,6 +188,7 @@
 
     function showLoading(url, isSite) {
       emptyState.style.display   = 'none';
+      document.querySelector('.page-body').classList.remove('has-report');
       loadingState.style.display = 'flex';
       frame.style.display        = 'none';
       loadingUrl.textContent     = url;
@@ -318,11 +197,13 @@
         : 'Granskar sidan… det tar vanligtvis 20–60 sekunder.';
     }
     function showReport() {
+      document.querySelector('.page-body').classList.add('has-report');
       loadingState.style.display = 'none';
       emptyState.style.display   = 'none';
       frame.style.display        = 'block';
     }
     function showEmpty() {
+      document.querySelector('.page-body').classList.remove('has-report');
       loadingState.style.display = 'none';
       frame.style.display        = 'none';
       emptyState.style.display   = 'flex';
@@ -374,6 +255,7 @@
 
     document.getElementById('scan-site-btn').onclick = () => {
       const url = document.getElementById('url').value.trim();
+      if (!form.reportValidity()) return;
       runScan('/scan-site', `Skannar alla sidor på ${url}…`);
     };
 
